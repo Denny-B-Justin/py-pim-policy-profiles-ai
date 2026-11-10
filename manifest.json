@@ -1,0 +1,345 @@
+{
+  "version": 1,
+  "locale": "en_US.UTF-8",
+  "metadata": {
+    "appmode": "python-dash",
+    "entrypoint": "app:app"
+  },
+  "python": {
+    "version": "3.11.9",
+    "package_manager": {
+      "name": "pip",
+      "version": "26.3",
+      "package_file": "requirements.txt"
+    }
+  },
+  "files": {
+    "requirements.txt": {
+      "checksum": "4004e5ca9045db4c41ad6b5e5d6714ce"
+    },
+    ".env.sample": {
+      "checksum": "4943f3e6b7ad8830950e86d3a121544d"
+    },
+    ".gitignore": {
+      "checksum": "dee572222af892ad69e3b306575198ca"
+    },
+    "ARCHITECTURE.md": {
+      "checksum": "a3a77561dd291b15b908955528ea5e9a"
+    },
+    "README.md": {
+      "checksum": "365d5f4c45eeaba6e167a183492f86bf"
+    },
+    "app.py": {
+      "checksum": "81e47ba29fd5d7f63e49e7ed5184a659"
+    },
+    "assets/app.js": {
+      "checksum": "fe4aed67182f864dc15ace226e6045f6"
+    },
+    "assets/countries.geojson": {
+      "checksum": "516164085426e6f9a84646395b02765a"
+    },
+    "assets/favicon.ico": {
+      "checksum": "c30c7d42707a47a3f4591831641e50dc"
+    },
+    "assets/fonts/inter-latin-ext-wght-normal.woff2": {
+      "checksum": "1ad231aac0a8a891b8374aa5526a5813"
+    },
+    "assets/fonts/inter-latin-wght-normal.woff2": {
+      "checksum": "260c81a4759baf163c025001c4f27872"
+    },
+    "assets/map.js": {
+      "checksum": "7bc9399d57fb96b65559807528329571"
+    },
+    "assets/pim-pam-logo.png": {
+      "checksum": "c6d7aab1c06f8084bc2910953c42784b"
+    },
+    "assets/pim-pam-logo.svg": {
+      "checksum": "15c5b37b4d3175f1e523920747d08d90"
+    },
+    "assets/rag-diagram.svg": {
+      "checksum": "947f99de72647cc3839642e04b60fb7c"
+    },
+    "assets/style.css": {
+      "checksum": "6731733f06189281054b2341250f32c0"
+    },
+    "assets/templates/PIM_Batch_Upload_Data_Dictionary.docx": {
+      "checksum": "ab3fad3d6b78419e3987297b266ed978"
+    },
+    "assets/templates/PIM_Country_Policy_Profile_Batch_Upload_Template.xlsx": {
+      "checksum": "bbef00ffc72c9016866a729472426155"
+    },
+    "assets/vendor/leaflet/images/layers-2x.png": {
+      "checksum": "4f0283c6ce28e888000e978e537a6a56"
+    },
+    "assets/vendor/leaflet/images/layers.png": {
+      "checksum": "a6137456ed160d7606981aa57c559898"
+    },
+    "assets/vendor/leaflet/images/marker-icon-2x.png": {
+      "checksum": "401d815dc206b8dc1b17cd0e37695975"
+    },
+    "assets/vendor/leaflet/images/marker-icon.png": {
+      "checksum": "2273e3d8ad9264b7daa5bdbf8e6b47f8"
+    },
+    "assets/vendor/leaflet/images/marker-shadow.png": {
+      "checksum": "44a526eed258222515aa21eaffd14a96"
+    },
+    "assets/vendor/leaflet/leaflet.css": {
+      "checksum": "c02c12fe5e21d2493070649584ca38b7"
+    },
+    "assets/vendor/leaflet/leaflet.js": {
+      "checksum": "35b48eb991f383702f153452506e07b2"
+    },
+    "assets/vendor/redoc/redoc.standalone.js": {
+      "checksum": "ea74457a08e48dbab01253f249c1bec4"
+    },
+    "data/countries.json": {
+      "checksum": "434dd12b8a5a2dee39ce13f255bce749"
+    },
+    "data/imf-pima-references.json": {
+      "checksum": "fd03522f705c0314a8c83cddd9ffe592"
+    },
+    "data/openapi.json": {
+      "checksum": "bf471a4ce2a48c82b574e933666c984f"
+    },
+    "data/release_notes.json": {
+      "checksum": "85ed4a037d16d500531981cf3e0a9d36"
+    },
+    "fonts/DejaVuSans-Bold.ttf": {
+      "checksum": "132839e7a052c2bc6771b6818aad85bd"
+    },
+    "fonts/DejaVuSans-Oblique.ttf": {
+      "checksum": "1b64c975f5f80b2ac9a9adbf42646f78"
+    },
+    "fonts/DejaVuSans.ttf": {
+      "checksum": "be189a7e2711cdf2a7f6275c60cbc7e2"
+    },
+    "fonts/NanumGothic-Bold.ttf": {
+      "checksum": "439955cf7d0d082018989fdee1568035"
+    },
+    "fonts/NanumGothic-Regular.ttf": {
+      "checksum": "001bd1cac56ab4f9f6367c65da090b07"
+    },
+    "fonts/README.md": {
+      "checksum": "b67bae115afd1b2070e9ef98f49bf002"
+    },
+    "pages/__init__.py": {
+      "checksum": "5be895e4b39946dfa55776f5805da066"
+    },
+    "pages/about.py": {
+      "checksum": "29f483f57f7c1dc9cdede6b13ef7f790"
+    },
+    "pages/api_docs.py": {
+      "checksum": "ea94c765569d50633b6ef19089f9a6fb"
+    },
+    "pages/batch_upload.py": {
+      "checksum": "eede03150d9e34e70ff1a202add42efc"
+    },
+    "pages/benchmark.py": {
+      "checksum": "6f9994e7da43a0cafd87cdd5fc9f98d3"
+    },
+    "pages/coach.py": {
+      "checksum": "978fd270fcf529d7ecee875656cbae30"
+    },
+    "pages/countries.py": {
+      "checksum": "89ef6bcb4200f4df02316cf5601d06e4"
+    },
+    "pages/country_detail.py": {
+      "checksum": "c42f80da3a6faf7c170ed05e41fc8563"
+    },
+    "pages/country_profile.py": {
+      "checksum": "945592b92f0c27eb0be9dbf0f60407dd"
+    },
+    "pages/country_transparency.py": {
+      "checksum": "21a1cf019e107068fcd8ad7d73a014aa"
+    },
+    "pages/download.py": {
+      "checksum": "78d472e84b80f484b682f0616dbff470"
+    },
+    "pages/error_page.py": {
+      "checksum": "2a95095726fcbf98332b152e42996b00"
+    },
+    "pages/home.py": {
+      "checksum": "e23c96cbdd127bbc4acd39f7dc9a9fa6"
+    },
+    "pages/map_page.py": {
+      "checksum": "e24280539f85b2183d473aed8e195547"
+    },
+    "pages/not_found.py": {
+      "checksum": "6878980c27ff905d06b4f0abc83dbde9"
+    },
+    "pages/policy_changes.py": {
+      "checksum": "ecae8a50daccdc1caa0538a5d0493e94"
+    },
+    "pages/raging.py": {
+      "checksum": "afa9b7e5373b356ab84412defd6ccc55"
+    },
+    "pages/record_detail.py": {
+      "checksum": "376a79cfbfad14a9b00c0da08245f51b"
+    },
+    "pages/record_edit.py": {
+      "checksum": "2db067c96457e8b433d848a61968b9b5"
+    },
+    "pages/record_new.py": {
+      "checksum": "02f78a1d30325bd4f79dac1d7a1e3353"
+    },
+    "pages/register.py": {
+      "checksum": "782065945d629ec5865b351f125f2272"
+    },
+    "pages/release_notes.py": {
+      "checksum": "e8ac75a947c468494c4d52674716b49b"
+    },
+    "pages/repository.py": {
+      "checksum": "e74c2ad2b86d30d66710e222963fe3bd"
+    },
+    "pages/signin.py": {
+      "checksum": "836421ab25ecc237a97767cfeec34e84"
+    },
+    "pages/statistics.py": {
+      "checksum": "f30772c907e341cb933b12c0aef5ee6f"
+    },
+    "scripts/create_tables.py": {
+      "checksum": "709af9aee82d7cbf1a350453c514458c"
+    },
+    "scripts/cron_reconcile.py": {
+      "checksum": "5c3c40b64d3ff07bbf7335b726fb4358"
+    },
+    "scripts/cron_refresh_pima.py": {
+      "checksum": "2eb080d1fed39833cc548442e64e3981"
+    },
+    "scripts/issue_api_key.py": {
+      "checksum": "2712d64861c8057ec726ed475ca8edac"
+    },
+    "scripts/migrate_from_postgres.py": {
+      "checksum": "8e195b6eb6143c665d8b9e0485e19d4b"
+    },
+    "scripts/reindex.py": {
+      "checksum": "dab4109a1c4a20f61bb259b29a50f6a5"
+    },
+    "scripts/seed_countries.py": {
+      "checksum": "1f0b0d5838ad237042176db17199db22"
+    },
+    "scripts/seed_demo.py": {
+      "checksum": "960de123901d2cfbe2316f9534fe20cb"
+    },
+    "sql/uc_tables.sql": {
+      "checksum": "aed577607d554474e34cab5fc8bee272"
+    },
+    "utils/api_keys.py": {
+      "checksum": "0a51a7cdd7d4b99fd254bf22d9939470"
+    },
+    "utils/api_routes.py": {
+      "checksum": "68b2c0b08fed23024d4627f39b3f732a"
+    },
+    "utils/audit.py": {
+      "checksum": "00c189cde690e3e35f703c66bb4ef56f"
+    },
+    "utils/auth.py": {
+      "checksum": "cfa05a9b1ed3281e2a969431a6a74f1a"
+    },
+    "utils/batch.py": {
+      "checksum": "37080f058e02b0c7862b2b98810b2e40"
+    },
+    "utils/briefing_panel.py": {
+      "checksum": "70821a19f4100886db4784ffb5f831af"
+    },
+    "utils/briefings.py": {
+      "checksum": "7d3ef33ba94e1b0ac0b0112893283f01"
+    },
+    "utils/changes.py": {
+      "checksum": "3127122879b05c94e817658d5575133b"
+    },
+    "utils/chat.py": {
+      "checksum": "2fba32a5b373101932b7b717257dc1db"
+    },
+    "utils/chat_ui.py": {
+      "checksum": "9b032c178e6d5eb7b81ce33c1d19a0b8"
+    },
+    "utils/check_link.py": {
+      "checksum": "229967a2cd595ce7fe4297a060e1079d"
+    },
+    "utils/chunking.py": {
+      "checksum": "7717691a213176b5172831407f7d0074"
+    },
+    "utils/components.py": {
+      "checksum": "1be293ca63bb601231e10701a7dfa41f"
+    },
+    "utils/constants.py": {
+      "checksum": "4bd674e0fb3761ded616726ced503fd4"
+    },
+    "utils/countries_data.py": {
+      "checksum": "fdba9f2f8ef20cc9133a60dd377ba90b"
+    },
+    "utils/db.py": {
+      "checksum": "aaf35d7bcb2e7e8e6b4da506985ff30c"
+    },
+    "utils/documents.py": {
+      "checksum": "964fec550c3d40fbd60adc029a67cdce"
+    },
+    "utils/export.py": {
+      "checksum": "2d4d0fb81962b872ea053d7d6e039f10"
+    },
+    "utils/extract.py": {
+      "checksum": "54f4763703c6e2699f746429d5bd841a"
+    },
+    "utils/icons.py": {
+      "checksum": "6074628eb9948acfd186e08f91472aaf"
+    },
+    "utils/imf_pima.py": {
+      "checksum": "67c148649f4e16b9af5d84eb6c3d5554"
+    },
+    "utils/indexer.py": {
+      "checksum": "af704ebd10027e317ba6ec019397e153"
+    },
+    "utils/jobs.py": {
+      "checksum": "d7aea9a027b8826257754da0bd7908ac"
+    },
+    "utils/layout.py": {
+      "checksum": "998b2c6013ad6de855468a9fb6c0bfcf"
+    },
+    "utils/mai_client.py": {
+      "checksum": "ee53184dc76a704a24af215df0184170"
+    },
+    "utils/prompts.py": {
+      "checksum": "9fea129a42b75faf09b13f8a5fc5da86"
+    },
+    "utils/queries.py": {
+      "checksum": "d398ceea17064bd38e42ae2357997f6d"
+    },
+    "utils/rag.py": {
+      "checksum": "2a69cf0c5876d7933d9329f5afcbe801"
+    },
+    "utils/ratelimit.py": {
+      "checksum": "4f88c7ddb6841153944950fc176cfd65"
+    },
+    "utils/record_form.py": {
+      "checksum": "5cfef80c811ecf76a46ee664b5742577"
+    },
+    "utils/record_schema.py": {
+      "checksum": "37b26f78c4d14b220d795dedecb62cc5"
+    },
+    "utils/routes.py": {
+      "checksum": "ee921b88d251367509f077ec30fe8ca7"
+    },
+    "utils/schema.py": {
+      "checksum": "086f141dc4233168ed4da4ba6291500d"
+    },
+    "utils/storage.py": {
+      "checksum": "33dd89101cd2e05decda8bf68eedb497"
+    },
+    "utils/toast.py": {
+      "checksum": "2d21f882d887d56499ec2f2540be423e"
+    },
+    "utils/translate.py": {
+      "checksum": "d2fbd3d74079d33206d3dd220598d966"
+    },
+    "utils/ui.py": {
+      "checksum": "064003407faef44e37ca60e838c42962"
+    },
+    "utils/widgets.py": {
+      "checksum": "be0a174bf7bb9d7bfcfbf0ab5cc02477"
+    },
+    "utils/xlsx_exports.py": {
+      "checksum": "f20381d4e3d72e1ceae946f4df446dbc"
+    }
+  }
+}

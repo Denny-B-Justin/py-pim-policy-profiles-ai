@@ -1,0 +1,24 @@
+# secrets / local config
+.env
+.env.*
+!.env.sample
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# local demo data (sqlite + files) and background-job scratch
+.local/
+
+# css build tooling (the compiled stylesheet lives in assets/style.css)
+tools/css/node_modules/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+
+ARCHITECTURE.md
