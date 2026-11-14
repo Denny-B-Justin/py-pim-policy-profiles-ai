@@ -1,0 +1,21 @@
+# Python 3.11.9
+dash==3.3.0
+Flask==3.1.3
+plotly==7.1.0
+requests==2.34.2
+python-dotenv==1.2.4
+bcrypt==5.0.0
+
+# Azure Databricks (Unity Catalog tables via SQL warehouse, files via UC Volume)
+databricks-sql-connector==4.9.0
+databricks-sdk==0.163.0
+
+# Posit mAI gateway clients (OpenAI / Gemini endpoints; the Claude endpoint uses plain HTTP)
+openai==3.48.0
+google-genai==3.0.0
+
+# Documents: extraction (PDF / DOCX / XLSX) and exports (PDF / DOCX / XLSX)
+pypdf==7.0.0
+python-docx==1.2.0
+openpyxl==3.1.5
+fpdf2==2.9.0

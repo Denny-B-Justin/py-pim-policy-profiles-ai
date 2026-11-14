@@ -1,0 +1,571 @@
+{
+  "_readme": [
+    "Curated IMF references to PIMAs that the Infrastructure Governance portal does not show (or shows only as 'unpublished').",
+    "Kinds: 'tar' = a full Technical Assistance Report on imf.org (series Technical Assistance Reports or Country Reports) -> status published, report = pdf;",
+    "'hls' = an IMF High-Level Summary Technical Assistance Report (the published product for many missions since 2023) -> status summary (grey star);",
+    "'mention' = a PIMA referred to in another IMF publication (e.g. an Article IV staff report) with no PIMA report at all -> status summary.",
+    "imf.org cannot be crawled by the server-side refresh (bot protection), so this list is maintained by hand / by the agentic review",
+    "and applied on every refresh: a matching portal row (same country and assessment type within one year) gets the reference and status;",
+    "otherwise a row is created with source 'imf.org' (tar/hls) or 'manual' (mention). A published status is never downgraded.",
+    "Fields: iso3, type (PIMA | PIMA Update | C-PIMA | PIMA follow-up), year, month (publication/reference month), kind (tar | hls | mention), url (page), pdf (report file, tar only), title, note."
+  ],
+  "references": [
+    {
+      "iso3": "PRT",
+      "type": "PIMA",
+      "year": 2026,
+      "month": 5,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/05/26/portugal-public-investment-management-assessment-with-the-climate-module-576338",
+      "title": "Portugal: Public Investment Management Assessment with the Climate Module"
+    },
+    {
+      "iso3": "PRT",
+      "type": "C-PIMA",
+      "year": 2026,
+      "month": 5,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/05/26/portugal-public-investment-management-assessment-with-the-climate-module-576338",
+      "title": "Portugal: Public Investment Management Assessment with the Climate Module"
+    },
+    {
+      "iso3": "UZB",
+      "type": "PIMA Update",
+      "year": 2026,
+      "month": 2,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/02/21/uzbekistan-public-investment-management-assessment-update-with-the-climate-module-574206",
+      "title": "Uzbekistan: Public Investment Management Assessment Update with the Climate Module"
+    },
+    {
+      "iso3": "UZB",
+      "type": "C-PIMA",
+      "year": 2026,
+      "month": 2,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/02/21/uzbekistan-public-investment-management-assessment-update-with-the-climate-module-574206",
+      "title": "Uzbekistan: Public Investment Management Assessment Update with the Climate Module"
+    },
+    {
+      "iso3": "LBR",
+      "type": "PIMA Update",
+      "year": 2026,
+      "month": 2,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/02/11/liberia-public-investment-management-assessment-pima-update-and-climate-pima-573919",
+      "title": "Liberia: Public Investment Management Assessment (PIMA) Update and Climate PIMA"
+    },
+    {
+      "iso3": "LBR",
+      "type": "C-PIMA",
+      "year": 2026,
+      "month": 2,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/02/11/liberia-public-investment-management-assessment-pima-update-and-climate-pima-573919",
+      "title": "Liberia: Public Investment Management Assessment (PIMA) Update and Climate PIMA"
+    },
+    {
+      "iso3": "BFA",
+      "type": "PIMA Update",
+      "year": 2026,
+      "month": 1,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/01/21/burkina-faso-public-investment-management-assessment-pima-and-climate-pima-573351",
+      "title": "Burkina Faso: Public Investment Management Assessment (PIMA) and Climate-PIMA"
+    },
+    {
+      "iso3": "BFA",
+      "type": "C-PIMA",
+      "year": 2026,
+      "month": 1,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/01/21/burkina-faso-public-investment-management-assessment-pima-and-climate-pima-573351",
+      "title": "Burkina Faso: Public Investment Management Assessment (PIMA) and Climate-PIMA"
+    },
+    {
+      "iso3": "FJI",
+      "type": "PIMA",
+      "year": 2025,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2025/12/02/republic-of-fiji-public-investment-management-assessment-pima-and-climate-pima-572220",
+      "title": "Republic of Fiji: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "FJI",
+      "type": "C-PIMA",
+      "year": 2025,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2025/12/02/republic-of-fiji-public-investment-management-assessment-pima-and-climate-pima-572220",
+      "title": "Republic of Fiji: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "COL",
+      "type": "PIMA",
+      "year": 2025,
+      "month": 8,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2025/08/04/public-investment-management-assessment-pima-climate-pima-colombia-569278",
+      "title": "Public Investment Management Assessment (PIMA) & Climate-PIMA: Colombia"
+    },
+    {
+      "iso3": "COL",
+      "type": "C-PIMA",
+      "year": 2025,
+      "month": 8,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2025/08/04/public-investment-management-assessment-pima-climate-pima-colombia-569278",
+      "title": "Public Investment Management Assessment (PIMA) & Climate-PIMA: Colombia"
+    },
+    {
+      "iso3": "GMB",
+      "type": "PIMA Update",
+      "year": 2025,
+      "month": 3,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2025/03/07/the-gambia-public-investment-management-assessment-update-with-the-climate-module-564988",
+      "title": "The Gambia: Public Investment Management Assessment Update with the Climate Module"
+    },
+    {
+      "iso3": "GMB",
+      "type": "C-PIMA",
+      "year": 2025,
+      "month": 3,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2025/03/07/the-gambia-public-investment-management-assessment-update-with-the-climate-module-564988",
+      "title": "The Gambia: Public Investment Management Assessment Update with the Climate Module"
+    },
+    {
+      "iso3": "HTI",
+      "type": "PIMA follow-up",
+      "year": 2026,
+      "month": 5,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2026/05/13/haiti-public-investment-management-assessment-pima-and-climate-pima-follow-up-576058",
+      "title": "Haiti: Public Investment Management Assessment – PIMA and Climate PIMA Follow Up"
+    },
+    {
+      "iso3": "MDV",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/30/maldives-mainstreaming-climate-change-into-public-financial-and-investment-management-green-560299",
+      "title": "Maldives: Mainstreaming Climate Change into Public Financial and Investment Management — Green PFM and Climate PIMA"
+    },
+    {
+      "iso3": "PNG",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/30/papua-new-guinea-climate-public-investment-management-assessment-cpima-560294",
+      "title": "Papua New Guinea: Climate Public Investment Management Assessment – CPIMA"
+    },
+    {
+      "iso3": "GTM",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/28/guatemala-assessing-public-investment-management-pima-and-climate-change-pima-560265",
+      "title": "Guatemala: Assessing Public Investment Management – PIMA and Climate Change PIMA"
+    },
+    {
+      "iso3": "GTM",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/28/guatemala-assessing-public-investment-management-pima-and-climate-change-pima-560265",
+      "title": "Guatemala: Assessing Public Investment Management – PIMA and Climate Change PIMA"
+    },
+    {
+      "iso3": "BRB",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/27/barbados-public-investment-management-assessment-pima-and-climate-pima-560249",
+      "title": "Barbados: Public Investment Management Assessment - PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "BRB",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/27/barbados-public-investment-management-assessment-pima-and-climate-pima-560249",
+      "title": "Barbados: Public Investment Management Assessment - PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "HND",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/27/honduras-public-investment-management-assessment-pima-and-climate-pima-560021",
+      "title": "Honduras: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "HND",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/27/honduras-public-investment-management-assessment-pima-and-climate-pima-560021",
+      "title": "Honduras: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "TGO",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/27/togo-public-investment-management-assessment-pima-and-climate-pima-560259",
+      "title": "Togo: Public Investment Management Assessment - PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "TGO",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/27/togo-public-investment-management-assessment-pima-and-climate-pima-560259",
+      "title": "Togo: Public Investment Management Assessment - PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "PRY",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/24/paraguay-public-investment-management-assessment-pima-and-climate-pima-559995",
+      "title": "Paraguay: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "PRY",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/24/paraguay-public-investment-management-assessment-pima-and-climate-pima-559995",
+      "title": "Paraguay: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "MOZ",
+      "type": "PIMA follow-up",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/16/republic-of-mozambique-public-investment-management-assessment-pima-and-climate-pima-559451",
+      "title": "Republic of Mozambique: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "MOZ",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/12/16/republic-of-mozambique-public-investment-management-assessment-pima-and-climate-pima-559451",
+      "title": "Republic of Mozambique: Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "TJK",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 11,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/11/27/tajikistan-public-investment-management-assessment-with-the-climate-module-558948",
+      "title": "Tajikistan: Public Investment Management Assessment with the Climate Module"
+    },
+    {
+      "iso3": "TJK",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 11,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/11/27/tajikistan-public-investment-management-assessment-with-the-climate-module-558948",
+      "title": "Tajikistan: Public Investment Management Assessment with the Climate Module"
+    },
+    {
+      "iso3": "SLE",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 8,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/08/01/sierra-leone-climate-module-of-the-public-investment-management-assessment-552896",
+      "title": "Sierra Leone: Climate Module of the Public Investment Management Assessment"
+    },
+    {
+      "iso3": "JOR",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 5,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/05/17/jordan-549142",
+      "title": "Jordan: Climate Module of the Public Investment Management Assessment and Green Public Financial Management"
+    },
+    {
+      "iso3": "MNG",
+      "type": "PIMA Update",
+      "year": 2024,
+      "month": 4,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2024/04/23/mongolia-mongolia-public-investment-management-assessment-update-548141",
+      "title": "Mongolia: Public Investment Management Assessment Update"
+    },
+    {
+      "iso3": "XKX",
+      "type": "PIMA Update",
+      "year": 2023,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2023/12/04/republic-of-kosovo-public-investment-management-assessment-update-and-climate-pima-542007",
+      "title": "Republic of Kosovo: Public Investment Management Assessment Update and Climate PIMA"
+    },
+    {
+      "iso3": "XKX",
+      "type": "C-PIMA",
+      "year": 2023,
+      "month": 12,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2023/12/04/republic-of-kosovo-public-investment-management-assessment-update-and-climate-pima-542007",
+      "title": "Republic of Kosovo: Public Investment Management Assessment Update and Climate PIMA"
+    },
+    {
+      "iso3": "MRT",
+      "type": "C-PIMA",
+      "year": 2023,
+      "month": 11,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2023/11/13/islamic-republic-of-mauritania-climate-public-investment-management-assessment-541397",
+      "title": "Islamic Republic of Mauritania: Climate Public Investment Management Assessment"
+    },
+    {
+      "iso3": "MDA",
+      "type": "C-PIMA",
+      "year": 2023,
+      "month": 11,
+      "kind": "hls",
+      "url": "https://www.imf.org/en/publications/high-level-summary-technical-assistance-reports/issues/2023/11/13/republic-of-moldova-climate-module-of-the-public-investment-management-assessment-541400",
+      "title": "Republic of Moldova: Climate Module of the Public Investment Management Assessment"
+    },
+    {
+      "iso3": "LSO",
+      "type": "PIMA",
+      "year": 2025,
+      "month": 9,
+      "kind": "mention",
+      "url": "https://www.imf.org/-/media/files/publications/cr/2025/english/1lsoea2025001-source-pdf.pdf",
+      "title": "Kingdom of Lesotho: 2025 Article IV Consultation (IMF Country Report No. 25/267)",
+      "note": "The 2025 Article IV staff report (September 2025) states that an IMF-supported PIMA is underway."
+    },
+    {
+      "iso3": "LSO",
+      "type": "PIMA",
+      "year": 2026,
+      "month": 7,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2026/07/17/kingdom-of-lesotho-technical-assistance-report-public-investment-management-assessment-pima-577747",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2026/english/tarea2026057.pdf",
+      "title": "Kingdom of Lesotho: Technical Assistance Report — Public Investment Management Assessment (PIMA)",
+      "note": "Full PIMA report published by the IMF on 17 July 2026 (Technical Assistance Reports series); Lesotho has no page on the IMF PIMA portal."
+    },
+    {
+      "iso3": "BFA",
+      "type": "PIMA Update",
+      "year": 2026,
+      "month": 1,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2026/01/21/burkina-faso-technical-assistance-report-public-investment-management-assessmentpima-and-573345",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2026/french/tarfa2026003-source-pdf.pdf",
+      "title": "Burkina Faso: Technical Assistance Report — Public Investment Management Assessment – PIMA and Climate-PIMA",
+      "note": "Full report (French) published 21 January 2026 alongside the high-level summary."
+    },
+    {
+      "iso3": "BFA",
+      "type": "C-PIMA",
+      "year": 2026,
+      "month": 1,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2026/01/21/burkina-faso-technical-assistance-report-public-investment-management-assessmentpima-and-573345",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2026/french/tarfa2026003-source-pdf.pdf",
+      "title": "Burkina Faso: Technical Assistance Report — Public Investment Management Assessment – PIMA and Climate-PIMA",
+      "note": "Full report (French) published 21 January 2026 alongside the high-level summary."
+    },
+    {
+      "iso3": "GTM",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 3,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2024/03/12/guatemala-technical-assistance-report-public-investment-management-assessment-pima-and-546208",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2024/english/tarea2024021.pdf",
+      "title": "Guatemala: Technical Assistance Report — Public Investment Management Assessment – PIMA and Climate-PIMA (C-PIMA)"
+    },
+    {
+      "iso3": "GTM",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 3,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2024/03/12/guatemala-technical-assistance-report-public-investment-management-assessment-pima-and-546208",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2024/english/tarea2024021.pdf",
+      "title": "Guatemala: Technical Assistance Report — Public Investment Management Assessment – PIMA and Climate-PIMA (C-PIMA)"
+    },
+    {
+      "iso3": "CPV",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 4,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2024/04/26/cabo-verde-technical-assistance-report-climate-public-investment-management-assessment-c-548120",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2024/english/tarea2024034.pdf",
+      "title": "Cabo Verde: Technical Assistance Report — Climate Public Investment Management Assessment (C-PIMA)"
+    },
+    {
+      "iso3": "PAK",
+      "type": "PIMA",
+      "year": 2023,
+      "month": 11,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2023/11/17/pakistan-technical-assistance-reportpublic-investment-management-assessmentpima-and-climate-541586",
+      "pdf": "https://www.imf.org/-/media/files/publications/cr/2023/english/1pakea2023002.pdf",
+      "title": "Pakistan: Technical Assistance Report — Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "PAK",
+      "type": "C-PIMA",
+      "year": 2023,
+      "month": 11,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2023/11/17/pakistan-technical-assistance-reportpublic-investment-management-assessmentpima-and-climate-541586",
+      "pdf": "https://www.imf.org/-/media/files/publications/cr/2023/english/1pakea2023002.pdf",
+      "title": "Pakistan: Technical Assistance Report — Public Investment Management Assessment – PIMA and Climate PIMA"
+    },
+    {
+      "iso3": "GBR",
+      "type": "PIMA",
+      "year": 2022,
+      "month": 9,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2022/09/01/united-kingdom-technical-assistance-report-public-investment-management-assessment-522790",
+      "pdf": "https://www.imf.org/-/media/files/publications/cr/2022/english/1gbrea2022012.pdf",
+      "title": "United Kingdom: Technical Assistance Report — Public Investment Management Assessment"
+    },
+    {
+      "iso3": "POL",
+      "type": "PIMA",
+      "year": 2022,
+      "month": 9,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2022/09/30/republic-of-poland-technical-assistance-report-public-investment-management-assessment-524111",
+      "pdf": "https://www.imf.org/-/media/files/publications/cr/2022/english/1polea2022003.pdf",
+      "title": "Republic of Poland: Technical Assistance Report — Public Investment Management Assessment"
+    },
+    {
+      "iso3": "MEX",
+      "type": "PIMA",
+      "year": 2019,
+      "month": 11,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2019/11/14/mexico-technical-assistance-report-public-investment-management-assessment-48805",
+      "pdf": "https://www.imf.org/-/media/files/publications/cr/2019/1mexea2019003.pdf",
+      "title": "Mexico: Technical Assistance Report — Public Investment Management Assessment"
+    },
+    {
+      "iso3": "EGY",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 4,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2024/04/02/arab-republic-of-egypt-technical-assistance-report-public-investment-management-assessment-547051",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2024/english/tarea2024028.pdf",
+      "title": "Arab Republic of Egypt: Technical Assistance Report — Public Investment Management Assessment"
+    },
+    {
+      "iso3": "SVN",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 10,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2024/10/04/republic-of-slovenia-technical-assistance-report-public-investment-management-assessment-555893",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2024/english/tarea2024084-print-pdf.pdf",
+      "title": "Republic of Slovenia: Technical Assistance Report — Public Investment Management Assessment"
+    },
+    {
+      "iso3": "XKX",
+      "type": "PIMA Update",
+      "year": 2023,
+      "month": 12,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2023/12/04/republic-of-kosovo-technical-assistance-report-public-investment-management-assessment-541925",
+      "pdf": "https://www.imf.org/-/media/files/publications/cr/2023/english/1kosea2023003.pdf",
+      "title": "Republic of Kosovo: Technical Assistance Report — Public Investment Management Assessment Update and Climate PIMA"
+    },
+    {
+      "iso3": "XKX",
+      "type": "C-PIMA",
+      "year": 2023,
+      "month": 12,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2023/12/04/republic-of-kosovo-technical-assistance-report-public-investment-management-assessment-541925",
+      "pdf": "https://www.imf.org/-/media/files/publications/cr/2023/english/1kosea2023003.pdf",
+      "title": "Republic of Kosovo: Technical Assistance Report — Public Investment Management Assessment Update and Climate PIMA"
+    },
+    {
+      "iso3": "XKX",
+      "type": "PIMA",
+      "year": 2016,
+      "month": 4,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/cr/issues/2016/12/31/republic-of-kosovo-technical-assistance-report-public-investment-management-assessment-43843",
+      "title": "Republic of Kosovo: Technical Assistance Report — Public Investment Management Assessment",
+      "note": "IMF Country Report No. 16/100 (April 2016); the report file is on the IMF PIMA portal."
+    },
+    {
+      "iso3": "TJK",
+      "type": "PIMA",
+      "year": 2024,
+      "month": 11,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2024/11/08/republic-of-tajikistan-technical-assistance-report-public-investment-management-assessment-557118",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2024/english/tarea2024094-print-pdf.pdf",
+      "title": "Republic of Tajikistan: Technical Assistance Report — Public Investment Management Assessment with the Climate Module"
+    },
+    {
+      "iso3": "TJK",
+      "type": "C-PIMA",
+      "year": 2024,
+      "month": 11,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2024/11/08/republic-of-tajikistan-technical-assistance-report-public-investment-management-assessment-557118",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2024/english/tarea2024094-print-pdf.pdf",
+      "title": "Republic of Tajikistan: Technical Assistance Report — Public Investment Management Assessment with the Climate Module"
+    },
+    {
+      "iso3": "COL",
+      "type": "PIMA",
+      "year": 2025,
+      "month": 8,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2025/08/06/colombia-technical-assistance-report-public-investment-management-assessment-pima-and-569361",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2025/spanish/tarsa2025075-source-pdf.pdf",
+      "title": "Colombia: Technical Assistance Report — Public Investment Management Assessment (PIMA) and Climate-PIMA",
+      "note": "Full report published in Spanish."
+    },
+    {
+      "iso3": "COL",
+      "type": "C-PIMA",
+      "year": 2025,
+      "month": 8,
+      "kind": "tar",
+      "url": "https://www.imf.org/en/publications/technical-assistance-reports/issues/2025/08/06/colombia-technical-assistance-report-public-investment-management-assessment-pima-and-569361",
+      "pdf": "https://www.imf.org/-/media/files/publications/tar/2025/spanish/tarsa2025075-source-pdf.pdf",
+      "title": "Colombia: Technical Assistance Report — Public Investment Management Assessment (PIMA) and Climate-PIMA",
+      "note": "Full report published in Spanish."
+    }
+  ]
+}

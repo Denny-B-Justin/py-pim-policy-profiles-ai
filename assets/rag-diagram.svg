@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-labelledby="t d" font-family="Inter, 'Helvetica Neue', Arial, sans-serif">
+  <title id="t">Working Across Languages for AI Retrieval Augmented Generation</title>
+  <desc id="d">English and non-English source data are indexed, retrieved and passed to the language model, which returns English and non-English responses.</desc>
+  <defs>
+    <marker id="arr-b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1d4ed8"/></marker>
+    <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#059669"/></marker>
+  </defs>
+  <rect width="960" height="540" fill="#ffffff"/>
+  <text x="480" y="46" text-anchor="middle" font-size="24" font-weight="700" fill="#0a0a0a">Working Across Languages for AI Retrieval Augmented Generation</text>
+  <text x="480" y="72" text-anchor="middle" font-size="14" fill="#737373">Each language keeps its own source documents; the response follows the language the user asks for</text>
+
+  <!-- column captions -->
+  <g font-size="12" font-weight="600" fill="#737373" text-anchor="middle" letter-spacing="1">
+    <text x="130" y="118">SOURCE DATA</text>
+    <text x="355" y="118">INDEXING</text>
+    <text x="580" y="118">RETRIEVAL + GENERATION</text>
+    <text x="820" y="118">RESPONSE</text>
+  </g>
+
+  <!-- English lane -->
+  <g>
+    <rect x="30" y="140" width="200" height="110" rx="12" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+    <text x="130" y="188" text-anchor="middle" font-size="15" font-weight="700" fill="#1d4ed8">English documents</text>
+    <text x="130" y="212" text-anchor="middle" font-size="13" fill="#404040">Policy records with an</text>
+    <text x="130" y="230" text-anchor="middle" font-size="13" fill="#404040">English text or translation</text>
+
+    <rect x="255" y="140" width="200" height="110" rx="12" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
+    <text x="355" y="182" text-anchor="middle" font-size="15" font-weight="700" fill="#0a0a0a">English index</text>
+    <text x="355" y="206" text-anchor="middle" font-size="13" fill="#404040">Section-aware chunks</text>
+    <text x="355" y="224" text-anchor="middle" font-size="13" fill="#404040">BM25 keyword search</text>
+
+    <rect x="780" y="140" width="150" height="110" rx="12" fill="#1d4ed8"/>
+    <text x="855" y="190" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">English</text>
+    <text x="855" y="212" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">response</text>
+    <path d="M230 195 H255" stroke="#1d4ed8" stroke-width="2.5" marker-end="url(#arr-b)" fill="none"/>
+    <path d="M455 195 H510" stroke="#1d4ed8" stroke-width="2.5" marker-end="url(#arr-b)" fill="none"/>
+    <path d="M650 195 H780" stroke="#1d4ed8" stroke-width="2.5" marker-end="url(#arr-b)" fill="none"/>
+  </g>
+
+  <!-- Non-English lane -->
+  <g>
+    <rect x="30" y="330" width="200" height="110" rx="12" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+    <text x="130" y="378" text-anchor="middle" font-size="15" font-weight="700" fill="#059669">Non-English documents</text>
+    <text x="130" y="402" text-anchor="middle" font-size="13" fill="#404040">Source / original-language</text>
+    <text x="130" y="420" text-anchor="middle" font-size="13" fill="#404040">policy documents</text>
+
+    <rect x="255" y="330" width="200" height="110" rx="12" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+    <text x="355" y="372" text-anchor="middle" font-size="15" font-weight="700" fill="#0a0a0a">Original-language index</text>
+    <text x="355" y="396" text-anchor="middle" font-size="13" fill="#404040">Section-aware chunks</text>
+    <text x="355" y="414" text-anchor="middle" font-size="13" fill="#404040">Unicode-aware BM25</text>
+
+    <rect x="780" y="330" width="150" height="110" rx="12" fill="#059669"/>
+    <text x="855" y="372" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">Non-English</text>
+    <text x="855" y="394" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">response</text>
+    <path d="M230 385 H255" stroke="#059669" stroke-width="2.5" marker-end="url(#arr-g)" fill="none"/>
+    <path d="M455 385 H510" stroke="#059669" stroke-width="2.5" marker-end="url(#arr-g)" fill="none"/>
+    <path d="M650 385 H780" stroke="#059669" stroke-width="2.5" marker-end="url(#arr-g)" fill="none"/>
+  </g>
+
+  <!-- shared retrieval + generation box -->
+  <rect x="510" y="140" width="140" height="300" rx="12" fill="#fafafa" stroke="#d4d4d4" stroke-width="2"/>
+  <text x="580" y="232" text-anchor="middle" font-size="16" font-weight="700" fill="#0a0a0a">Retrieve</text>
+  <text x="580" y="254" text-anchor="middle" font-size="13" fill="#404040">top passages</text>
+  <path d="M580 270 V300" stroke="#a3a3a3" stroke-width="2" marker-end="url(#arr-b)" fill="none"/>
+  <text x="580" y="328" text-anchor="middle" font-size="16" font-weight="700" fill="#0a0a0a">Generate</text>
+  <text x="580" y="350" text-anchor="middle" font-size="13" fill="#404040">Posit mAI gateway</text>
+
+  <text x="480" y="500" text-anchor="middle" font-size="13" fill="#737373">Citations always point back to the numbered source records in the Policy Repository</text>
+</svg>
