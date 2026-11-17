@@ -298,7 +298,7 @@ No AI. `utils/changes.py` reads `created_at` / `updated_at` of the country's rec
 ## 7. The AI part (mAI, retrieval, prompts)
 
 ### 7.1 Talking to mAI (`utils/mai_client.py`)
-* Needs only `MAI_BASE_URL` and `MAI_ENDPOINT` (and optionally `MAI_MODEL`). The provider is derived from `MAI_ENDPOINT` (`…/bedrock/…` → Claude, `…/openai/…` → OpenAI, `…/gemini/…` → Gemini).
+* Needs `MAI_BASE_URL` plus one mai-endpoint per provider to offer: `MAI_ENDPOINT_OPENAI`, `MAI_ENDPOINT_CLAUDE` (with a literal `<model>`, filled in per call), `MAI_ENDPOINT_GEMINI` (optional `MAI_MODEL` = default model). A single `MAI_ENDPOINT` also works; its provider is derived from the URL. The offered models are `constants.MAI_MODELS` (the two most capable approved models per provider: `gpt-6-luna`, `gpt-5.6-luna`, `claude-haiku-5-5`, `gemini-3.8-flash`, `gemini-3.7-flash`) of the configured providers; the briefing panels let the user pick one ("AI Model"), everything else uses the default. Without any configured provider the Coach and briefing pages show a "coming soon" page (Policy Changes still works).
 * Every request carries the query parameter `mai-endpoint` and the headers `X-Posit-App-Id` (= `CONNECT_CONTENT_GUID`, injected by Posit Connect), `Content-Type: application/json`, `x-source-type: interactive`. **No `Authorization` header, no key.**
 * Claude: plain `requests.post(MAI_BASE_URL + "converse", …)` (Bedrock Converse). OpenAI: `client.responses.create`. Gemini: `client.interactions.create` (the SDK clients get the literal api key `"not-used"`).
 * One public function, `generate(system, messages, max_tokens, temperature)`. Rate-limit (429), server (5xx) and timeout errors are retried up to 3 times with a short back-off; other errors (400 / 403 / 404 …) fail immediately with a plain-language hint.
@@ -424,7 +424,7 @@ SELECT country, name_eng, link, link_last_ok_at FROM prd_mega.sgpbpi163.policy_r
 | Change **AI wording** | `utils/prompts.py` |
 | Change **styling** | Tailwind classes in the page/`utils/ui.py`; rebuild `assets/style.css`: `cd tools/css && npx tailwindcss -i input.css -o ../../assets/style.css` |
 | Add a **column or table** | Edit `utils/schema.py` (`SCHEMA`, `CREATE_ORDER`), add the table name to `constants.TABLES`, run `ALTER TABLE … ADD COLUMN …` (or `python scripts/create_tables.py` for new tables), update `utils/queries.py` and the migration script |
-| Change the **mAI model/endpoint** | Connect environment variables `MAI_ENDPOINT` / `MAI_MODEL` (allowed models only) → restart the content |
+| Change the **mAI models/endpoints** | Connect environment variables `MAI_ENDPOINT_OPENAI` / `MAI_ENDPOINT_CLAUDE` / `MAI_ENDPOINT_GEMINI` / `MAI_MODEL` → restart the content; the offered model list is `constants.MAI_MODELS` |
 | Change **chunk size / retrieval depth** | `constants.CHUNK_SIZE` / `CHUNK_PARENT_CHARS`, `constants.RETRIEVER_K` / `BRIEFING_RETRIEVER_K` → then re-index |
 | Edit **About / release notes** | `pages/pages_constants.py` (`ABOUT_*`), `data/release_notes.json` |
 | Update **dependencies** | `requirements.txt` (pinned) → regenerate the manifest: `rsconnect write-manifest dash -e app:app -x "tools/**" -x "docs/**" .` |
@@ -436,7 +436,7 @@ After any code change: redeploy with `rsconnect deploy manifest manifest.json` (
 ## 13. Operations
 
 ### 13.1 Configuration (Connect → Content → Vars)
-`MAI_BASE_URL`, `MAI_ENDPOINT` (optional `MAI_MODEL`); `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET`; recommended `PIM_SECRET_KEY`, `ADMIN_INVITE_CODE`; optional `CRON_SECRET`, `RAG_ADMIN_KEY`, `EXPORT_ALLOWED_ORIGINS`, `PUBLIC_BASE_URL`, `PIM_CACHE_SECONDS`, `PIM_JOB_WORKERS`, `PIM_JOBS_DIR`, `PIM_MAX_TRANSLATE_CHARS`, `PIM_TRANSLATE_WORKERS`. All are listed with explanations in `.env.sample`. Leave **Integrations** empty (mAI needs none). Never set `CONNECT_CONTENT_GUID` — Connect does.
+`MAI_BASE_URL`, `MAI_ENDPOINT_OPENAI` / `MAI_ENDPOINT_CLAUDE` / `MAI_ENDPOINT_GEMINI` (at least one; optional `MAI_MODEL`); `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET`; recommended `PIM_SECRET_KEY`, `ADMIN_INVITE_CODE`; optional `CRON_SECRET`, `RAG_ADMIN_KEY`, `EXPORT_ALLOWED_ORIGINS`, `PUBLIC_BASE_URL`, `PIM_CACHE_SECONDS`, `PIM_JOB_WORKERS`, `PIM_JOBS_DIR`, `PIM_MAX_TRANSLATE_CHARS`, `PIM_TRANSLATE_WORKERS`. All are listed with explanations in `.env.sample`. Leave **Integrations** empty (mAI needs none). Never set `CONNECT_CONTENT_GUID` — Connect does.
 
 Databricks permissions for the service principal: `USE CATALOG`, `USE SCHEMA`, `SELECT`, `MODIFY`, `CREATE TABLE` on the schema, `READ VOLUME` / `WRITE VOLUME` on `policy_repo_documents`, and *Can use* on the SQL warehouse (see `docs/DATABRICKS_MIGRATION.md`).
 
@@ -469,10 +469,10 @@ Logs go to standard output (Connect → Logs); `LOG_LEVEL` sets the verbosity. L
 | Symptom | Likely cause → fix |
 |---|---|
 | AI Coach answers "I don't have information…" or shows no sources | Index empty or the document is not indexed. Check `?page=statistics`; run a re-index; scanned PDFs have no text layer (OCR them, re-upload). |
-| "mAI is not configured" | `MAI_BASE_URL` / `MAI_ENDPOINT` missing in Connect Vars. |
-| "mAI gateway error 403" | Not running on Posit Connect (local machine), or a model outside the allowed list in `MAI_MODEL`. |
+| "mAI is not configured" / Coach shows "coming soon" | `MAI_BASE_URL` or every `MAI_ENDPOINT_*` missing in Connect Vars. |
+| "mAI gateway error 403" | Not running on Posit Connect (local machine), or a model the gateway does not allow. |
 | "mAI gateway error 404" | Wrong `MAI_BASE_URL` (must end with `/`) or endpoint path. |
-| "mAI gateway error 400" | `MAI_ENDPOINT` empty, or `CONNECT_CONTENT_GUID` missing (not on Connect). |
+| "mAI gateway error 400" | wrong `MAI_ENDPOINT_*` value, or `CONNECT_CONTENT_GUID` missing (not on Connect). |
 | Pages say "Databricks is not configured" / very slow first load | The four `DATABRICKS_*` variables are missing, or the warehouse is starting. |
 | "table or view not found" | Tables not created: run `scripts/create_tables.py`; check catalog/schema names. |
 | Country lists are empty | `policy_repo_countries` not loaded: run `scripts/seed_countries.py`. |

@@ -87,8 +87,7 @@ def register_callbacks(app) -> None:
             chars = translate.estimate_characters(storage.read(ori["file_path"]), ori.get("file_name"))
             body = html.Span(["Estimated total translation length: ", html.Strong(f"{chars:,} characters"), "."])
             if not mai_client.is_configured():
-                body = html.Span("mAI is not configured on this server (MAI_BASE_URL / MAI_ENDPOINT).",
-                                 className="text-destructive")
+                body = html.Span(mai_client.NOT_CONFIGURED, className="text-destructive")
                 return body, True, HIDDEN, no_update, {}
             return body, False, HIDDEN, no_update, {}
         except Exception as exc:  # noqa: BLE001

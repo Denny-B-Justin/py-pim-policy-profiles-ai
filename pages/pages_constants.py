@@ -117,6 +117,22 @@ RECORD_EDIT_TITLE = "Edit Record — PIM Policy Profiles AI"
 # coach / country-profile / country-transparency
 # ─────────────────────────────────────────────────────────────────────────────
 COACH_TITLE = APP_TITLE
+# Shown instead of the AI tabs (briefings, Ask the Coach) while the mAI gateway is not configured.
+COACH_SOON_BADGE = "Coming soon"
+COACH_SOON_TITLE = "The AI Coach is on its way"
+COACH_SOON_TEXT = ("Country profiles, transparency briefs and Ask the Coach are being connected to the World Bank's "
+                   "mAI service. They will be available here shortly.")
+COACH_SOON_FEATURES = [
+    ("file-text", "Country Profile", "Institutional map, policy hierarchy and the 8 must-have PIM stages."),
+    ("shield-check", "Transparency Brief", "Disclosure mandates benchmarked against international good practice."),
+    ("messages-square", "Ask the Coach", "Cited answers grounded in the curated policy repository."),
+]
+COACH_SOON_MEANWHILE = "In the meantime"
+COACH_SOON_LINKS = [
+    ("policy-changes", "Track policy changes", "history"),
+    ("repository", "Browse the repository", "book-open"),
+    ("countries", "Explore countries", "globe"),
+]
 COUNTRY_PROFILE_TITLE = APP_TITLE
 COUNTRY_TRANSPARENCY_TITLE = APP_TITLE
 

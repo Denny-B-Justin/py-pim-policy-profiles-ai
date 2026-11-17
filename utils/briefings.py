@@ -116,7 +116,9 @@ def _status(job_id: str, text: str, detail: str | None = None) -> None:
     jobs.update(job_id, status_text=text, detail=detail)
 
 
-def generate(job_id: str, key: str, iso3: str, lang: str, scope: str, repo_url: str = "") -> dict:
+def generate(job_id: str, key: str, iso3: str, lang: str, scope: str, repo_url: str = "",
+             model: str | None = None) -> dict:
+    """`model` = one of mai_client.available_models() (None → the default model)."""
     spec = get_briefing(key)
     if not spec:
         raise ValueError("Unknown briefing.")
@@ -124,7 +126,7 @@ def generate(job_id: str, key: str, iso3: str, lang: str, scope: str, repo_url: 
     scope = (scope or "all").strip()
     iso3 = iso3.upper()
     if not mai_client.is_configured():
-        raise mai_client.MaiError("mAI is not configured. Set the MAI_BASE_URL and MAI_ENDPOINT environment variables.")
+        raise mai_client.MaiError(mai_client.NOT_CONFIGURED)
 
     names = queries.country_name_map()
     country_name = names.get(iso3) or iso3
@@ -166,12 +168,12 @@ def generate(job_id: str, key: str, iso3: str, lang: str, scope: str, repo_url: 
     system, human = prompts.build_briefing_messages(brief_key, profile_name, policy_context, rag_context, directive,
                                                     prompts.repo_base_url(repo_url))
     content = mai_client.generate(system, human, max_tokens=PROFILE_MAX_TOKENS if brief_key == "profile"
-                                  else C.BRIEFING_MAX_TOKENS, temperature=0.2)
+                                  else C.BRIEFING_MAX_TOKENS, temperature=0.2, model=model)
     return {"content": content, "country_name": profile_name, "sources": len(docs)}
 
 
-def start(key: str, iso3: str, lang: str, scope: str, repo_url: str = "") -> str:
-    return jobs.submit("briefing", generate, key, iso3, lang, scope, repo_url)
+def start(key: str, iso3: str, lang: str, scope: str, repo_url: str = "", model: str | None = None) -> str:
+    return jobs.submit("briefing", generate, key, iso3, lang, scope, repo_url, model)
 
 
 # ── cache (GET/POST /api/briefings) ──────────────────────────────────────────

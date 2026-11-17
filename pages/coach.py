@@ -11,10 +11,19 @@ from __future__ import annotations
 from dash import ALL, Input, Output, ctx, html, no_update
 
 from pages import policy_changes
-from pages.pages_constants import COACH_TITLE as TITLE
-from utils import briefing_panel, briefings, chat_ui
+from pages.pages_constants import (
+    COACH_TITLE as TITLE,
+    COACH_SOON_BADGE,
+    COACH_SOON_TITLE,
+    COACH_SOON_TEXT,
+    COACH_SOON_FEATURES,
+    COACH_SOON_MEANWHILE,
+    COACH_SOON_LINKS,
+)
+from utils import briefing_panel, briefings, chat_ui, mai_client
 from utils.icons import icon
-from utils.ui import cn
+from utils.routes import href
+from utils.ui import button_class, cn, link
 
 # Menu order of the original: the briefing registry, then Policy Changes, then the chatbot.
 _ICONS = {"profile": "file-text", "transparency": "shield-check"}
@@ -29,7 +38,34 @@ def _tab_class(active: bool) -> str:
               "border-transparent text-muted-foreground hover:text-foreground")
 
 
+def coming_soon():
+    """Placeholder for the AI features while the mAI gateway is not configured (also used by the standalone
+    country-profile / country-transparency pages)."""
+    features = [html.Div([
+        html.Span(icon(ico, "h-4 w-4"), className="inline-flex h-8 w-8 items-center justify-center rounded-md "
+                                                  "bg-violet-50 text-violet-600"),
+        html.P(title, className="mt-3 text-sm font-semibold"),
+        html.P(text, className="mt-1 text-xs leading-relaxed text-muted-foreground"),
+    ], className="rounded-lg border border-border bg-background p-4 text-left") for ico, title, text in COACH_SOON_FEATURES]
+    links = [link(icon(ico, "h-4 w-4"), label, href=href(page), cls=button_class("outline", "sm"))
+             for page, label, ico in COACH_SOON_LINKS]
+    return html.Div(html.Div([
+        html.Span(icon("sparkles", "h-5 w-5"), className="mx-auto flex size-10 items-center justify-center "
+                                                          "rounded-xl bg-violet-50 text-violet-600"),
+        html.Span(COACH_SOON_BADGE, className="mt-5 inline-block rounded-full border border-amber-200 bg-amber-50 "
+                                              "px-3 py-1 text-xs font-medium text-amber-800"),
+        html.H2(COACH_SOON_TITLE, className="mt-3 text-2xl font-bold tracking-tight"),
+        html.P(COACH_SOON_TEXT, className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground"),
+        html.Div(features, className="mt-8 grid gap-3 sm:grid-cols-3"),
+        html.P(COACH_SOON_MEANWHILE, className="mt-10 text-xs font-semibold uppercase tracking-wide "
+                                               "text-muted-foreground"),
+        html.Div(links, className="mt-3 flex flex-wrap justify-center gap-2"),
+    ], className="mx-auto max-w-3xl px-4 py-12 text-center"), className="h-full overflow-y-auto")
+
+
 def _content(tab: str):
+    if tab != "changes" and not mai_client.is_configured():
+        return coming_soon()
     if briefings.get_briefing(tab):
         return html.Div(briefing_panel.panel(tab), className="h-full overflow-y-auto")
     if tab == "changes":

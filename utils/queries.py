@@ -174,7 +174,7 @@ def list_countries() -> list[dict]:
         rows = db.query(
             f"SELECT DISTINCT p.country AS iso3, COALESCE(c.name, p.country) AS name "
             f"FROM {table('policy_records')} p LEFT JOIN {table('countries')} c ON c.iso3 = p.country "
-            f"ORDER BY COALESCE(c.name, p.country)"
+            f"ORDER BY name"   # DISTINCT: Databricks only lets ORDER BY use the output columns, not `c.name`
         )
         return [{"iso3": r["iso3"], "name": r["name"]} for r in rows]
     return db.cached("policy_records:countries", None, load)

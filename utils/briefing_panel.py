@@ -5,8 +5,8 @@ country picker → generated Markdown report → Word/PDF export, plus the archi
 (`?page=country-profile`, `?page=country-transparency`) and as a tab of the Coach hub.
 
 The original streamed tokens over SSE; the mAI gateway cannot stream, so generation runs in a background job
-(`utils.briefings.start`) that publishes status lines while the page polls it.  The "AI Model" selector of the
-original listed the backend's provider models; mAI exposes one configured endpoint, so the selector is omitted.
+(`utils.briefings.start`) that publishes status lines while the page polls it.  The "AI Model" selector lists the
+mAI models whose provider endpoint is configured (`mai_client.available_models()`); "Default" = the default model.
 Ids are prefixed `bp-`; only one panel exists in the layout at a time.
 """
 
@@ -18,7 +18,7 @@ from datetime import datetime
 
 from dash import Input, Output, State, dcc, html, no_update
 
-from utils import briefings, db, export, jobs, queries
+from utils import briefings, db, export, jobs, mai_client, queries
 from utils.auth import client_ip, current_user
 from utils.icons import icon
 from utils.ratelimit import rate_limit
@@ -96,6 +96,12 @@ def panel(key: str):
         html.Label("Jurisdiction", htmlFor="bp-scope", className=_LABEL),
         select("bp-scope", _scope_options(None), value="all", cls="w-full", menu_width="16rem")],
         id="bp-scope-wrap", className="min-w-[200px]", style=_HIDE))
+    models = [("default", "Default")] + [(m["id"], mai_client.model_label(m["id"]))
+                                         for m in mai_client.available_models()]
+    controls.append(html.Div([
+        html.Label("AI Model", htmlFor="bp-model", className=_LABEL),
+        select("bp-model", models, value="default", cls="w-full", menu_width="16rem")],
+        className="min-w-[200px]"))
     controls.append(html.Button("Generate Briefing", id="bp-gen", type="button", n_clicks=0, disabled=True,
                                 className=_BTN_PRIMARY))
     controls.append(html.Button([icon("download", "h-4 w-4"), "Word Briefing"], id="bp-one", type="button",
@@ -239,7 +245,7 @@ def register_callbacks(app) -> None:
     @app.callback(
         Output("bp-gen", "disabled"), Output("bp-gen", "children"), Output("bp-one", "disabled"),
         Output("bp-one", "children"), Output("bp-country", "disabled"), Output("bp-lang", "disabled"),
-        Output("bp-scope", "disabled"), Output("bp-status", "hidden"),
+        Output("bp-scope", "disabled"), Output("bp-model", "disabled"), Output("bp-status", "hidden"),
         Input("bp-country", "value"), Input("bp-state", "data"))
     def controls(iso3, state):
         running = bool((state or {}).get("running"))
@@ -248,7 +254,7 @@ def register_callbacks(app) -> None:
         one = ([loading_spinner(), "Preparing Word…"] if running and oneclick
                else [icon("download", "h-4 w-4"), "Word Briefing"])
         off = not iso3 or running
-        return off, gen, off, one, running, running, running, not running
+        return off, gen, off, one, running, running, running, running, not running
 
     @app.callback(
         Output("bp-job", "data"), Output("bp-state", "data"), Output("bp-poll", "disabled"),
@@ -256,22 +262,25 @@ def register_callbacks(app) -> None:
         Output("bp-status", "children"),
         Input("bp-gen", "n_clicks"), Input("bp-one", "n_clicks"),
         State("bp-country", "value"), State("bp-lang", "value"), State("bp-scope", "value"), State("bp-key", "data"),
-        State("url", "href"), State("bp-state", "data"), prevent_initial_call=True)
-    def start(n_gen, n_one, iso3, lang, scope, key, url_href, state):
+        State("bp-model", "value"), State("url", "href"), State("bp-state", "data"), prevent_initial_call=True)
+    def start(n_gen, n_one, iso3, lang, scope, key, model, url_href, state):
         from dash import ctx  # noqa: PLC0415
 
         trig = ctx.triggered_id
         if not iso3 or (state or {}).get("running") or not ((n_gen if trig == "bp-gen" else n_one) or 0):
             return (no_update,) * 6
         lang, scope = lang or "ENG", scope or "all"
+        model = None if model in (None, "", "default") else model
         if not briefings.valid_params(key, iso3, lang, scope):
             return None, no_update, True, None, _alert("Invalid parameters"), no_update
+        if model and model not in {m["id"] for m in mai_client.available_models()}:
+            return None, no_update, True, None, _alert("The selected AI model is not available."), no_update
         ok, retry = rate_limit(f"briefing:{client_ip()}", 30, 3600)  # 30 briefings / hour / IP (briefing_limiter)
         if not ok:
             return None, no_update, True, None, _alert(f"Too many requests. Try again in {retry}s."), no_update
         base = (url_href or "").split("?", 1)[0].split("#", 1)[0].rstrip("/")
         try:
-            job_id = briefings.start(key, iso3, lang, scope, base)
+            job_id = briefings.start(key, iso3, lang, scope, base, model)
         except Exception as exc:  # noqa: BLE001
             log.exception("briefing start failed")
             return None, no_update, True, None, _alert(str(exc) or "Generation failed. Please try again."), no_update

@@ -130,34 +130,39 @@ JOBS_DIR = Path(_env("PIM_JOBS_DIR") or Path(tempfile.gettempdir()) / "pim_jobs"
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. mAI gateway  (Posit mAI Gateway – Developer Guide)
 # ─────────────────────────────────────────────────────────────────────────────
-# Only TWO variables are required (set them in Posit Connect -> Settings -> Vars):
-#   MAI_BASE_URL  gateway URL, MUST end with "/"
-#   MAI_ENDPOINT  the mai-endpoint for your provider (OpenAI / Claude / Gemini)
+# Set in Posit Connect -> Settings -> Runtime -> Environment Variables (see .env.sample):
+#   MAI_BASE_URL          gateway URL, MUST end with "/"  (QA and Production differ)
+#   MAI_ENDPOINT_OPENAI   mai-endpoint for GPT     (…/maifactory/openai/responses)
+#   MAI_ENDPOINT_CLAUDE   mai-endpoint for Claude  (…/maifactory/bedrock/model/us.anthropic.<model>/converse)
+#   MAI_ENDPOINT_GEMINI   mai-endpoint for Gemini  (…/maifactory/gemini/interactions)
+# Set the endpoints of the providers you want; models of a provider without an
+# endpoint are not offered.  A single MAI_ENDPOINT (the guide's one-provider setup)
+# also works – its provider is detected from the URL.
 # Nothing else: no API keys, tokens or client details.  The app id header
 # (X-Posit-App-Id) is taken from CONNECT_CONTENT_GUID which Posit Connect sets
 # automatically for every deployed app.
 MAI_BASE_URL = _env("MAI_BASE_URL")
-MAI_ENDPOINT = _env("MAI_ENDPOINT")
-# Optional.  Only needed for OpenAI / Gemini endpoints (Claude's model is part of
-# the endpoint URL).  Must be one of MAI_ALLOWED_MODELS.
+MAI_ENDPOINTS: dict[str, str] = {
+    "openai": _env("MAI_ENDPOINT_OPENAI"),
+    "claude": _env("MAI_ENDPOINT_CLAUDE"),
+    "gemini": _env("MAI_ENDPOINT_GEMINI"),
+}
+MAI_ENDPOINT = _env("MAI_ENDPOINT")             # optional single-provider alternative to the three above
+# Optional default model (must be in MAI_MODELS and its provider configured);
+# empty = the first configured model below.
 MAI_MODEL = _env("MAI_MODEL")
 
-MAI_ALLOWED_MODELS: dict[str, list[str]] = {
-    "claude": ["claude-haiku-5-5"],
-    "openai": ["gpt-6-luna", "gpt-5.6-luna"],
-    "gemini": [
-        "gemini-3.1-flash-lite",
-        "gemini-3.5-flash-lite",
-        "gemini-3.6-flash",
-        "gemini-3.7-flash",
-        "gemini-3.8-flash",
-    ],
-}
-MAI_DEFAULT_MODEL = {
-    "claude": "claude-haiku-5-5",
-    "openai": "gpt-6-luna",
-    "gemini": "gemini-3.8-flash",
-}
+# Models the app offers: the two most capable gateway-approved models per provider
+# (Claude has only one).  Order = preference for the default model.  Other approved
+# models (gemini-3.1/3.5-flash-lite, gemini-3.6-flash) are deliberately not offered.
+MAI_MODELS: list[dict[str, str]] = [
+    {"id": "gpt-6-luna", "provider": "openai", "label": "GPT-6 Luna"},
+    {"id": "gpt-5.6-luna", "provider": "openai", "label": "GPT-5.6 Luna"},
+    {"id": "claude-haiku-5-5", "provider": "claude", "label": "Claude Haiku 5.5"},
+    {"id": "gemini-3.8-flash", "provider": "gemini", "label": "Gemini 3.8 Flash"},
+    {"id": "gemini-3.7-flash", "provider": "gemini", "label": "Gemini 3.7 Flash"},
+]
+MAI_PROVIDER_LABELS = {"openai": "OpenAI", "claude": "Anthropic", "gemini": "Google"}
 MAI_SOURCE_TYPE = "interactive"
 MAI_TIMEOUT_SECONDS = _env_int("MAI_TIMEOUT_SECONDS", 240)
 # Local UI preview without gateway access (the gateway rejects non-Connect hosts).

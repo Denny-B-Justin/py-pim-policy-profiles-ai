@@ -18,22 +18,22 @@
       "checksum": "4004e5ca9045db4c41ad6b5e5d6714ce"
     },
     ".env.sample": {
-      "checksum": "0dea286f5c04dd45d938fbcfb3b4b330"
+      "checksum": "00d7a6864621552ce16ee6cfe1113a5e"
     },
     ".gitignore": {
-      "checksum": "dee572222af892ad69e3b306575198ca"
+      "checksum": "2d5ba858f2966f331a34d782c049950d"
     },
     "ARCHITECTURE.md": {
-      "checksum": "b60bdfd2b2c32443cceff3010beb4f0c"
+      "checksum": "b7f1a8331841b0f84ec5038936dbf543"
     },
     "README.md": {
-      "checksum": "c58c33653225ee95ffaa96d6f0e056cb"
+      "checksum": "746b6d9d644c247c5bb15aac710825d6"
     },
     "app.py": {
       "checksum": "d84b2a0f8dcd941581db03afe5cbaa01"
     },
     "constants.py": {
-      "checksum": "ac03983c9f52004d0baaf6142a008d4e"
+      "checksum": "8f1b2f1e1cd60312d89993b66fd86b2b"
     },
     "assets/app.js": {
       "checksum": "fe4aed67182f864dc15ace226e6045f6"
@@ -141,7 +141,7 @@
       "checksum": "cae28402ea93b3586ff46b865f561e6e"
     },
     "pages/coach.py": {
-      "checksum": "4a323e8ef66ce45d7de8fecdc74006f0"
+      "checksum": "960fa6fd2dc37dd4a88c6a2662802b64"
     },
     "pages/countries.py": {
       "checksum": "01b76c9a158fe8a76b27775a1bc9a605"
@@ -150,10 +150,10 @@
       "checksum": "19ee85670cde8b37b747af9b7c7bc169"
     },
     "pages/country_profile.py": {
-      "checksum": "584202efd375293c75df5ca0432d70b4"
+      "checksum": "357e38e85b1f199846ca9b2e3e5de73f"
     },
     "pages/country_transparency.py": {
-      "checksum": "9cbdb759d9b75a2aef63aef092da7748"
+      "checksum": "cda9d96cb7de69ede3ca9c596738503a"
     },
     "pages/download.py": {
       "checksum": "25261d6d1eb675909236909f7ccc8e3e"
@@ -171,7 +171,7 @@
       "checksum": "3fecff835d6f8979c400ef4add30e13e"
     },
     "pages/pages_constants.py": {
-      "checksum": "900e4a29887b40948b4d539d02de78cb"
+      "checksum": "b68242c069c271a17dba27d479421ccd"
     },
     "pages/policy_changes.py": {
       "checksum": "96abd76d2ed39fd4994236358f2d8eba"
@@ -246,16 +246,16 @@
       "checksum": "4ce048524ab3e459169bef61cd4fe6c7"
     },
     "utils/briefing_panel.py": {
-      "checksum": "70821a19f4100886db4784ffb5f831af"
+      "checksum": "945c23234237289828673ae883fc02de"
     },
     "utils/briefings.py": {
-      "checksum": "35ca5069eed4ed401f42b93b3a1b2bbc"
+      "checksum": "5f6cc59c9b4429062a768f413834fd3b"
     },
     "utils/changes.py": {
       "checksum": "df15a70032587b43d2cc1f852ab1fb38"
     },
     "utils/chat.py": {
-      "checksum": "2c4decf28aa85a645da22788d5143cb6"
+      "checksum": "d620b2a71e97833b4a0d30ebbaf2d8a3"
     },
     "utils/chat_ui.py": {
       "checksum": "9b032c178e6d5eb7b81ce33c1d19a0b8"
@@ -300,13 +300,13 @@
       "checksum": "5fb7a1b02ab62deb6519b463768b04f6"
     },
     "utils/mai_client.py": {
-      "checksum": "2cce371abadbc4ebff8c5cd5eb84e4e0"
+      "checksum": "431df43d5bf3c3f353703aef4eeb488e"
     },
     "utils/prompts.py": {
       "checksum": "21d868e38aa5027e705b87c2e906a118"
     },
     "utils/queries.py": {
-      "checksum": "889ed636cb0b2ac55f4f3489e0e1d241"
+      "checksum": "373866d2dd582f28d24b549049299d80"
     },
     "utils/rag.py": {
       "checksum": "e0dc20809aeb7868ac93013c0498cde6"
@@ -339,7 +339,7 @@
       "checksum": "064003407faef44e37ca60e838c42962"
     },
     "utils/widgets.py": {
-      "checksum": "be0a174bf7bb9d7bfcfbf0ab5cc02477"
+      "checksum": "bf7da7518359ecb32e4ef0d65800d922"
     },
     "utils/xlsx_exports.py": {
       "checksum": "f20381d4e3d72e1ceae946f4df446dbc"

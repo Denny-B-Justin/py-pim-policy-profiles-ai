@@ -3,7 +3,7 @@
 Dash port of the Next.js + FastAPI "PIM Policy Profiles AI" application, built to run on **Posit Connect** (Python 3.11.9).
 
 * Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.policy_repo_*` tables, documents in the UC Volume `policy_repo_documents`
-* AI: **Posit mAI Gateway** — two variables (`MAI_BASE_URL`, `MAI_ENDPOINT`), no API keys
+* AI: **Posit mAI Gateway** — `MAI_BASE_URL` + one endpoint per provider (`MAI_ENDPOINT_OPENAI` / `_CLAUDE` / `_GEMINI`), no API keys
 * Pages: one site, routed by query string — `/?page=<name>` (home is `/` or `/?page=home`)
 
 ## Pages
@@ -49,7 +49,7 @@ Copy `.env.sample` to `.env` locally; on Connect set the same names under **Cont
 
 | Variable | Needed | Purpose |
 |---|---|---|
-| `MAI_BASE_URL`, `MAI_ENDPOINT` | **yes** | mAI gateway (the only AI settings; `MAI_MODEL` is optional) |
+| `MAI_BASE_URL`, `MAI_ENDPOINT_OPENAI` / `MAI_ENDPOINT_CLAUDE` / `MAI_ENDPOINT_GEMINI` | **yes** (at least one endpoint) | mAI gateway – QA/Production values in `.env.sample`; `MAI_MODEL` (default model) is optional. Without them the Coach shows "coming soon" |
 | `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET` | **yes** | SQL warehouse + OAuth M2M service principal for `prd_mega.sgpbpi163` |
 | `PIM_SECRET_KEY` | recommended | signs the cookie of local accounts (shared by all Connect processes) |
 | `ADMIN_INVITE_CODE` | recommended | required to register after the first account |

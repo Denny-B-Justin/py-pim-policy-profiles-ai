@@ -35,7 +35,7 @@ def ask(question: str, history: list[dict] | None = None, filters: dict | None =
     if not question:
         raise ValueError("Question is required.")
     if not mai_client.is_configured():
-        raise mai_client.MaiError("mAI is not configured. Set the MAI_BASE_URL and MAI_ENDPOINT environment variables.")
+        raise mai_client.MaiError(mai_client.NOT_CONFIGURED)
     history = [{"role": m.get("role"), "content": m.get("content")} for m in (history or [])
                if m.get("role") in ("user", "assistant") and m.get("content")]
     response_language = "ORI" if (filters or {}).get("lang_type") == "ORI" else None
