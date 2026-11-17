@@ -46,7 +46,7 @@ def layout(params=None):
             html.Div([
                 html.P([
                     "The ",
-                    html.A("pim-pam.net", href="https://pim-pam.net", target="_blank", rel="noopener noreferrer",
+                    html.A("PIM-PAM Digital Tools", href="https://datanalytics.worldbank.org/wkpgf-pimpam-digital-tools/", target="_blank", rel="noopener noreferrer",
                            className="font-semibold text-foreground underline underline-offset-2 "
                                      "hover:text-blue-600 transition-colors"),
                     " Global Public Investment Management (PIM) Policies AI Repository provides a systematic online "

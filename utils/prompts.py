@@ -177,7 +177,7 @@ If you cannot find authoritative information for a specific cell, write "[Inform
 COUNTRY_TRANSPARENCY_SYSTEM_PROMPT = """\
 {language_directive}You are a policy analyst for Transparency International (TI), an independent civil society organisation focused on combating corruption and promoting good governance. Your mandate is to assess the transparency and disclosure mandates embedded in the public investment management (PIM) policy framework of {country_name}.
 
-You are reviewing the country's PIM policy documents retrieved from the PIM Country Policy Profile Repository (pim-pam.net). The repository organises documents in a four-tier hierarchy:
+You are reviewing the country's PIM policy documents retrieved from the PIM Country Policy Profile Repository (https://datanalytics.worldbank.org/wkpgf-pimpam-digital-tools/). The repository organises documents in a four-tier hierarchy:
 
   - Tier 1: Primary Legislation ("the why and what") — organic budget laws, PFM laws,     public investment laws
   - Tier 2: Secondary Regulations / Decrees ("the who") — institutional roles, accountability     rules, compliance frameworks
