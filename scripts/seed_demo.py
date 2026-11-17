@@ -15,12 +15,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from utils import constants as C  # noqa: E402
+import constants as C  # noqa: E402
 from utils import auth, db, documents, imf_pima, indexer, queries  # noqa: E402
 from utils.db import table  # noqa: E402
 from utils.schema import all_ddl  # noqa: E402
 
-FONT_DIR = C.BASE_DIR / "fonts"
+FONT_DIR = C.FONTS_DIR
 DEMO_EMAIL = "demo-user@example.org"
 DEMO_PASSWORD = "longenough1"
 
@@ -141,7 +141,7 @@ def main() -> None:
         db.execute(stmt)
     # countries (from the reference data)
     if not db.query(f"SELECT 1 FROM {table('countries')} LIMIT 1"):
-        for c in json.loads((C.BASE_DIR / "data" / "countries.json").read_text(encoding="utf-8")):
+        for c in json.loads(C.COUNTRIES_JSON.read_text(encoding="utf-8")):
             db.insert("countries", {"iso3": c["iso3"], "name": c["name"], "gdp_2024_bn": c["gdpBn"],
                                     "pub_inv_pct_gdp": c["pubInvPctGdp"], "pub_inv_2024_bn": c["pubInvBn"]})
     if args.reset:

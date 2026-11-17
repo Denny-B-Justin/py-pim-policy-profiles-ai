@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+from pages.pages_constants import COUNTRY_PROFILE_TITLE as TITLE
 from utils import briefing_panel
-
-TITLE = "PIM Policy Profiles AI"
 
 
 def layout(params=None):

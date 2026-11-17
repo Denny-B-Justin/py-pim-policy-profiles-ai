@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from dash import html
 
+from pages.pages_constants import RECORD_NEW_TITLE as TITLE
 from utils import record_form
 from utils.icons import icon
 from utils.routes import href
 from utils.ui import link
-
-TITLE = "Add New Policy Record — PIM Policy Profiles AI"
 
 
 def layout(params=None):

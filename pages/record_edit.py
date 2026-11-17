@@ -5,12 +5,11 @@ from __future__ import annotations
 from dash import html
 
 from pages import not_found
+from pages.pages_constants import RECORD_EDIT_TITLE as TITLE
 from utils import queries, record_form
 from utils.icons import icon
 from utils.routes import href
 from utils.ui import link
-
-TITLE = "Edit Record — PIM Policy Profiles AI"
 
 
 def layout(params=None):

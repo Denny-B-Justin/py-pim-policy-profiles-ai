@@ -4,51 +4,13 @@ from __future__ import annotations
 
 from dash import html
 
+from pages.pages_constants import (
+    ABOUT_TITLE as TITLE,
+    ABOUT_POLICY_TIERS as POLICY_TIERS,
+    ABOUT_STRATEGY_TYPES as STRATEGY_TYPES,
+    ABOUT_REFERENCES as REFERENCES,
+)
 from utils.ui import badge, cn, separator
-
-TITLE = "About · PIM Policy Profiles AI"
-
-POLICY_TIERS = [
-    dict(code="Tier 1", label="Primary Legislation", tagline='the "why" and "what"',
-         badge="bg-blue-50 text-blue-700 border-blue-200", border="border-l-blue-400",
-         body="The foundational legal authority for PIM, typically established through an Organic Budget Law, Public "
-              "Finance Management Law, or a dedicated Public Investment Law. This tier sets the overall objectives "
-              "and principles of public investment, establishes which entities are subject to the rules, and "
-              "defines key concepts. It should be durable and not change frequently. In most countries, this is "
-              "where the mandate for PIM is anchored — without this, the framework lacks legal force."),
-    dict(code="Tier 2", label="Secondary Regulations / Decrees", tagline='the "who"',
-         badge="bg-indigo-50 text-indigo-700 border-indigo-200", border="border-l-indigo-400",
-         body="Regulations, decrees, or statutory instruments issued under the authority of Tier 1. They specify "
-              "roles and responsibilities of different institutions (e.g., the Ministry of Finance, sector "
-              "ministries, line agencies), set the rules of the process in more detail, and establish "
-              "accountability and compliance requirements. They are more specific than primary legislation but "
-              "still relatively high-level."),
-    dict(code="Tier 3", label="Procedural Guidelines and Methodological Guidance", tagline='the "how"',
-         badge="bg-violet-50 text-violet-700 border-violet-200", border="border-l-violet-400",
-         body="Operational manuals, circulars, and technical guidelines that provide the practical step-by-step "
-              "instructions for how to carry out appraisal, selection, implementation and evaluation of projects. "
-              "This is where, for example, cost-benefit analysis methodology and project appraisal templates live. "
-              "These can and should be updated relatively frequently as practice evolves."),
-    dict(code="Tier 4", label="Strategies for Project Prioritization & Alignment", tagline=None,
-         badge="bg-teal-50 text-teal-700 border-teal-200", border="border-l-teal-400", body=None),
-]
-
-STRATEGY_TYPES = [
-    (1, "National (Longer Term, 5 Years+)"), (2, "Medium Term (3–5 years)"), (3, "Sectoral"),
-    (4, "Cross-Cutting (Climate)"), (5, "Cross-Cutting (Other)"), (6, "Sub-National Strategy"),
-]
-
-REFERENCES = [
-    dict(citation="Kim, J.-H., Fallov, J. A., & Groom, S. (2020). Public Investment Management Reference Guide. "
-                  "Washington, DC: World Bank International Development in Practice, pp. 279.",
-         url="https://openknowledge.worldbank.org/server/api/core/bitstreams/2e0fa0e5-254e-5119-ab70-4ebfebc3f8ef/content",
-         link_label="Open Knowledge Repository"),
-    dict(citation="Manescu, C. B. (2024). The Planning of Public Investments in EU Member States: Long-Term Strategy, "
-                  "Selection & Budgeting Issues. Brussels: European Commission Directorate-General for Economic and "
-                  "Financial Affairs, European Economy Discussion Papers, 213, December, pp. 36.",
-         url="https://economy-finance.ec.europa.eu/publications/planning-public-investments-eu-member-states-long-term-strategy-selection-and-budgeting-issues_en",
-         link_label="European Commission Publications"),
-]
 
 
 def _tier_card(t: dict):

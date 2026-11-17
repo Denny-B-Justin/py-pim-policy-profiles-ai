@@ -1,5 +1,5 @@
 """
-IMF PIMA data: parsing the IMF Infrastructure Governance portal, the `pim_imf_pima_assessments` table, the
+IMF PIMA data: parsing the IMF Infrastructure Governance portal, the `policy_repo_imf_pima_assessments` table, the
 curated references, and the per-country summaries used by the Countries page and the public API.
 
 Port of `web/lib/imf-pima.ts` + `web/modules/pima/queries.ts`.  (Upserts are select-then-write because
@@ -18,7 +18,7 @@ from typing import Any, Callable
 
 import requests
 
-from utils import constants as C
+import constants as C
 from utils import db
 from utils.countries_data import countries_data
 from utils.db import table
@@ -259,7 +259,7 @@ def upsert_assessments(iso3: str, imf_country_name: str, source_url: str, parsed
 
 def apply_references(log_fn: Callable[[str], None] | None = None) -> dict:
     """Curated references (data/imf-pima-references.json). Mentions → summaries → full reports last."""
-    with open(C.BASE_DIR / "data" / "imf-pima-references.json", encoding="utf-8") as fh:
+    with open(C.IMF_PIMA_REFERENCES_JSON, encoding="utf-8") as fh:
         refs = json.load(fh)["references"]
     order = {"mention": 0, "hls": 1, "tar": 2}
     refs = sorted(refs, key=lambda r: order[r["kind"]])

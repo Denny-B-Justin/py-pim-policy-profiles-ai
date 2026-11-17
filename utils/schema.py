@@ -11,7 +11,7 @@ DDL as a plain file you can paste into the Databricks SQL editor.
 
 from __future__ import annotations
 
-from utils import constants as C
+import constants as C
 
 # (column, databricks_type)   – NOT NULL is enforced by Delta, PK/FK are informational
 SCHEMA: dict[str, dict] = {

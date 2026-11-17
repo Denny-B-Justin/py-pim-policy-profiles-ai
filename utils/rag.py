@@ -2,7 +2,7 @@
 Retrieval for the AI Coach and the country briefings.
 
 The original service searched a pgvector index with OpenAI embeddings.  The Posit mAI gateway exposes
-no embedding endpoint, so retrieval is **lexical BM25** over the chunk table `pim_document_chunks`
+no embedding endpoint, so retrieval is **lexical BM25** over the chunk table `policy_repo_document_chunks`
 (see docs/DATABRICKS_MIGRATION.md).  The chunk rows are loaded into a process-local, in-memory
 SQLite **FTS5** index (Porter stemming + unicode folding, built-in `bm25()` ranking); if FTS5 is not
 compiled into the host's SQLite, a pure-Python BM25 over the filtered candidates is used instead.
@@ -25,7 +25,7 @@ from collections import Counter
 from itertools import zip_longest
 from typing import Any
 
-from utils import constants as C
+import constants as C
 from utils import db
 from utils.db import table
 

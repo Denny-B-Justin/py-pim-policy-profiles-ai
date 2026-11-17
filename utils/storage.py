@@ -6,7 +6,7 @@ Production : a Unity Catalog **Volume**  /Volumes/<catalog>/<schema>/<volume>/�
              service principal as the SQL connection).
 Local demo : a plain folder (PIM_DB_BACKEND=sqlite → PIM_LOCAL_STORAGE).
 
-`pim_documents.file_path` stores the *key* (path relative to the volume root), e.g.
+`policy_repo_documents.file_path` stores the *key* (path relative to the volume root), e.g.
     LTU/6f1c…-law-on-budget.pdf
 Never a public URL: files are served through the app's own `/api/download/<doc_id>` route.
 """
@@ -20,7 +20,7 @@ import threading
 from pathlib import Path
 from typing import Iterator
 
-from utils import constants as C
+import constants as C
 
 log = logging.getLogger(__name__)
 

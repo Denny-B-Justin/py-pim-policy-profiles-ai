@@ -2,13 +2,14 @@
 Central constants for the PIM Policy Profiles AI Dash app.
 
 Everything that is configurable lives here or in the environment (.env).
-See .env.sample for the full list of variables.
+See .env.sample for the full list of variables.  Page copy (titles, card text,
+legends, per-page colours) lives in pages/pages_constants.py.
 
 Sections
 --------
-1. Branding / app metadata
+1. Branding / app metadata, web server + session
 2. Databricks (Azure) Unity Catalog connection  ->  prd_mega.sgpbpi163
-3. Unity Catalog table + volume names (what to call the tables when migrating)
+3. Unity Catalog table + volume names (what to call the tables when migrating), local paths
 4. mAI gateway (only TWO environment variables are required)
 5. Taxonomy (policy tiers, strategy types, jurisdictions, ...)
 6. Limits / tuning knobs
@@ -17,11 +18,12 @@ Sections
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -52,6 +54,17 @@ PUBLIC_BASE_URL = _env("PUBLIC_BASE_URL")
 # Default page (served at "/" and at "/?page=home")
 DEFAULT_PAGE = "home"
 
+# Web server (only used by `python app.py`; Posit Connect runs app:app itself)
+LOG_LEVEL = _env("LOG_LEVEL", "INFO")
+DASH_DEBUG = _env("DASH_DEBUG", "0") == "1"
+HOST = "0.0.0.0"
+PORT = _env_int("PORT", 8050)
+
+# Signed session cookie for local accounts
+SESSION_COOKIE_NAME = "pim_session"
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_LIFETIME_DAYS = 30
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. Databricks / Azure Unity Catalog
 # ─────────────────────────────────────────────────────────────────────────────
@@ -76,29 +89,43 @@ SQLITE_PATH = _env("PIM_SQLITE_PATH", str(BASE_DIR / ".local" / "demo.sqlite"))
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. Unity Catalog objects
 # ─────────────────────────────────────────────────────────────────────────────
-# Ideal table names (prefix `pim_` keeps them easy to find in a shared schema).
+# Ideal table names (the prefix keeps them easy to find in a shared schema).
 # These are the names to use when migrating the Neon/Postgres tables — the
 # mapping from the original Postgres table is in docs/DATABRICKS_MIGRATION.md.
-TABLE_PREFIX = "pim_"
+TABLE_PREFIX = "policy_repo_"
 TABLES: dict[str, str] = {
-    "countries": "pim_countries",                       # was  countries
-    "policy_records": "pim_policy_records",             # was  policy_records
-    "documents": "pim_documents",                       # was  documents
-    "users": "pim_users",                               # was  users
-    "audit_logs": "pim_audit_logs",                     # was  audit_logs
-    "partner_api_keys": "pim_partner_api_keys",         # was  partner_api_keys
-    "batch_imports": "pim_batch_imports",               # was  batch_imports
-    "batch_import_rows": "pim_batch_import_rows",       # was  batch_import_rows (jsonb -> STRING)
-    "briefings_cache": "pim_briefings_cache",           # was  briefings_cache
-    "imf_pima_assessments": "pim_imf_pima_assessments", # was  imf_pima_assessments
-    "document_chunks": "pim_document_chunks",           # was  langchain_pg_embedding + chunk_parents (pgvector)
+    "countries": f"{TABLE_PREFIX}countries",                        # was  countries
+    "policy_records": f"{TABLE_PREFIX}policy_records",              # was  policy_records
+    "documents": f"{TABLE_PREFIX}documents",                        # was  documents
+    "users": f"{TABLE_PREFIX}users",                                # was  users
+    "audit_logs": f"{TABLE_PREFIX}audit_logs",                      # was  audit_logs
+    "partner_api_keys": f"{TABLE_PREFIX}partner_api_keys",          # was  partner_api_keys
+    "batch_imports": f"{TABLE_PREFIX}batch_imports",                # was  batch_imports
+    "batch_import_rows": f"{TABLE_PREFIX}batch_import_rows",        # was  batch_import_rows (jsonb -> STRING)
+    "briefings_cache": f"{TABLE_PREFIX}briefings_cache",            # was  briefings_cache
+    "imf_pima_assessments": f"{TABLE_PREFIX}imf_pima_assessments",  # was  imf_pima_assessments
+    "document_chunks": f"{TABLE_PREFIX}document_chunks",            # was  langchain_pg_embedding + chunk_parents (pgvector)
 }
 
 # Unity Catalog Volume that replaces Vercel Blob (policy PDFs / DOCX files).
-UC_VOLUME = _env("DATABRICKS_VOLUME", "pim_documents")
+UC_VOLUME = _env("DATABRICKS_VOLUME", f"{TABLE_PREFIX}documents")
 UC_VOLUME_ROOT = f"/Volumes/{DATABRICKS_CATALOG}/{DATABRICKS_SCHEMA}/{UC_VOLUME}"
 # Local folder used instead of the volume when PIM_DB_BACKEND=sqlite
 LOCAL_STORAGE_DIR = Path(_env("PIM_LOCAL_STORAGE", str(BASE_DIR / ".local" / "files")))
+
+# Bundled files
+DATA_DIR = BASE_DIR / "data"
+FONTS_DIR = BASE_DIR / "fonts"
+COUNTRIES_JSON = DATA_DIR / "countries.json"
+IMF_PIMA_REFERENCES_JSON = DATA_DIR / "imf-pima-references.json"
+OPENAPI_JSON = DATA_DIR / "openapi.json"
+RELEASE_NOTES_JSON = DATA_DIR / "release_notes.json"
+# Batch-upload template + data dictionary (paths relative to assets/)
+BATCH_TEMPLATE_ASSET = "templates/PIM_Country_Policy_Profile_Batch_Upload_Template.xlsx"
+BATCH_DATADICT_ASSET = "templates/PIM_Batch_Upload_Data_Dictionary.docx"
+
+# Background job state (JSON files shared by all worker processes on the host)
+JOBS_DIR = Path(_env("PIM_JOBS_DIR") or Path(tempfile.gettempdir()) / "pim_jobs")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. mAI gateway  (Posit mAI Gateway – Developer Guide)
@@ -139,6 +166,8 @@ MAI_MOCK = _env("PIM_MAI_MOCK", "0") in ("1", "true", "True")
 # Generation budgets
 CHAT_MAX_TOKENS = 2048
 BRIEFING_MAX_TOKENS = 8192
+# Cap on the visible text of long-form briefings (original: 12288 incl. reasoning for the profile).
+PROFILE_MAX_TOKENS = 12288
 TRANSLATE_CHUNK_CHARS = 6000
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -320,14 +349,52 @@ NATIVE_LANGUAGES = [
 # 6. Limits / tuning
 # ─────────────────────────────────────────────────────────────────────────────
 MAX_UPLOAD_BYTES = 250 * 1024 * 1024          # per attached document
+MAX_ZIP_BYTES = 250 * 1024 * 1024             # "download all documents" zip
 MAX_BATCH_SHEET_BYTES = 5 * 1024 * 1024       # batch upload spreadsheet
 ALLOWED_DOC_EXTENSIONS = (".pdf", ".doc", ".docx", ".txt")
 PAGE_SIZE = 20                                # repository table page size
 QUERY_CACHE_SECONDS = _env_int("PIM_CACHE_SECONDS", 60)
+
+# Batch import: fetching documents from the spreadsheet's URLs
+BATCH_FETCH_TIMEOUT = 30                      # seconds
+BATCH_MAX_REDIRECTS = 5
+BATCH_MAX_DOC_BYTES = 25 * 1024 * 1024
+BATCH_STUCK_ROW_MINUTES = 5                   # a row "processing" for longer than this is assumed abandoned
+
+# Source-link checker
+LINK_CHECK_TIMEOUT = 12                       # seconds
+LINK_CHECK_MAX_REDIRECTS = 5
+LINK_CHECK_USER_AGENT = "PIM-LinkCheck/1.0"
+
+# Background jobs
+JOB_WORKERS = _env_int("PIM_JOB_WORKERS", 6)
+JOB_TTL_SECONDS = 6 * 3600
+
+# Translation
+MAX_TRANSLATE_CHARS = _env_int("PIM_MAX_TRANSLATE_CHARS", 600000)
+TRANSLATE_WORKERS = _env_int("PIM_TRANSLATE_WORKERS", 3)
+
+# Text extraction / text-layer detection
+EXTRACT_SAMPLE_PAGES = 6
+EXTRACT_MIN_CHARS_PER_PAGE = 40
+EXTRACT_MAX_DETECT_BYTES = 40 * 1024 * 1024
+
+# Search index + retrieval
+CHUNK_SIZE = 1000
+CHUNK_PARENT_CHARS = max(CHUNK_SIZE * 2, 1800)   # 2000
+INDEX_BATCH = 20
 RETRIEVER_K = 6
 BRIEFING_RETRIEVER_K = 20
-CHUNK_PARENT_CHARS = 2000
 MAX_CONTEXT_TOKENS = 6000
+
+# Briefings (stored / exported markdown)
+BRIEFING_MIN_CONTENT = 100
+BRIEFING_MAX_CONTENT = 500_000
+
+# Partner API keys:  pim_v1_<32 hex chars>
+API_KEY_PREFIX = "pim_v1_"
+API_KEY_RANDOM_HEX_CHARS = 32                 # 128 bits of entropy
+
 SECRET_KEY = _env("PIM_SECRET_KEY", "") or _env("FLASK_SECRET_KEY", "")
 EXPORT_ALLOWED_ORIGINS = _env("EXPORT_ALLOWED_ORIGINS")   # comma-separated CORS origins for GET /api/export/documents (default: any)
 CRON_SECRET = _env("CRON_SECRET")               # optional bearer token for GET /api/imf-pima/refresh and /api/rag-sync/reconcile

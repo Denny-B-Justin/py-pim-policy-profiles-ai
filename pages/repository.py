@@ -8,7 +8,9 @@ from datetime import datetime
 from dash import ALL, Input, Output, State, ctx, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 
-from utils import auth, constants as C, documents, queries
+import constants as C
+from pages.pages_constants import REPOSITORY_TITLE as TITLE
+from utils import auth, documents, queries
 from utils.audit import log_audit
 from utils.components import (HEALTH_ICON_CLASS, HEALTH_TITLE, link_health, machine_readable_badge, record_status_badge,
                               tier_badge, title_class)
@@ -20,7 +22,6 @@ from utils.ui import (DIALOG_HIDE, DIALOG_SHOW, badge, button, button_class, cn,
                       th, thead, tr)
 from utils.widgets import recheck_links_widget
 
-TITLE = "Repository — PIM Policy Profiles AI"
 PAGE_SIZE = C.PAGE_SIZE
 TH = "text-xs font-semibold uppercase tracking-wide"
 

@@ -1,7 +1,7 @@
 """
 Create the Unity Catalog tables (Delta) for the app.
 
-    python scripts/create_tables.py            # creates the prd_mega.sgpbpi163.pim_* tables + the pim_documents volume (needs DATABRICKS_* env vars)
+    python scripts/create_tables.py            # creates the prd_mega.sgpbpi163.policy_repo_* tables + the policy_repo_documents volume (needs DATABRICKS_* env vars)
     python scripts/create_tables.py --print    # just print the DDL
     PIM_DB_BACKEND=sqlite python scripts/create_tables.py   # local demo database
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from utils import constants as C  # noqa: E402
+import constants as C  # noqa: E402
 from utils import db  # noqa: E402
 from utils.schema import all_ddl  # noqa: E402
 

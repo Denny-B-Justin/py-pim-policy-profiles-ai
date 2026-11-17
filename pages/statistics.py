@@ -12,24 +12,26 @@ import time
 
 from dash import Input, Output, dcc, html, no_update
 
+from pages.pages_constants import (
+    STATISTICS_TITLE as TITLE,
+    STATISTICS_BLUE as BLUE,
+    STATISTICS_BLUE_LIGHT as BLUE_LIGHT,
+    STATISTICS_TIER_COLORS as TIER_COLORS,
+    STATISTICS_LANG_COLORS as LANG_COLORS,
+    STATISTICS_MUTED_FG as MUTED_FG,
+    STATISTICS_BORDER as BORDER,
+    STATISTICS_FG as FG,
+    STATISTICS_AXIS as AXIS,
+    STATISTICS_FONT as FONT,
+)
 from utils import queries, rag
 from utils.icons import icon
 from utils.ui import cn, loading_spinner
 
 log = logging.getLogger(__name__)
 
-TITLE = "Search Index Analytics — PIM Policy Profiles AI"
 
 # ── colours (StatisticsContent.tsx) + the shadcn tokens Plotly cannot read from CSS variables ──
-BLUE = "#1d4ed8"
-BLUE_LIGHT = "#3b82f6"
-TIER_COLORS = ["#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa"]
-LANG_COLORS = ["#1d4ed8", "#10b981"]
-MUTED_FG = "#737373"      # --muted-foreground
-BORDER = "#e5e5e5"        # --border
-FG = "#0a0a0a"            # --foreground
-AXIS = "#666666"          # Recharts' default axis stroke
-FONT = "Inter, ui-sans-serif, system-ui, sans-serif"
 
 CONTAINER = "mx-auto max-w-5xl px-4 py-16"
 CARD = "rounded-lg border bg-background p-5 shadow-sm"

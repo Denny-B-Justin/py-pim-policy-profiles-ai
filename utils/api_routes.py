@@ -32,14 +32,15 @@ from functools import wraps
 
 from flask import Blueprint, Response, abort, jsonify, request, stream_with_context
 
-from utils import api_keys, auth, briefings, chat, constants as C, indexer, mai_client, queries, storage
+import constants as C
+from utils import api_keys, auth, briefings, chat, indexer, mai_client, queries, storage
 from utils.ratelimit import rate_limit, rate_limit_state
 from utils.routes import api_url
 
 log = logging.getLogger(__name__)
 bp = Blueprint("pim_api", __name__)
 
-MAX_ZIP_BYTES = 250 * 1024 * 1024
+MAX_ZIP_BYTES = C.MAX_ZIP_BYTES
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 _DOC_MIME = {".pdf": "application/pdf", ".doc": "application/msword", ".txt": "text/plain; charset=utf-8",
              ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
@@ -552,7 +553,7 @@ def v1_coach(_partner):
 @bp.get("/api/v1/openapi.json")
 def v1_openapi():
     """Public (no key) so the Redoc viewer on the API page – and partners' own viewers – can load it."""
-    with open(C.BASE_DIR / "data" / "openapi.json", encoding="utf-8") as fh:
+    with open(C.OPENAPI_JSON, encoding="utf-8") as fh:
         spec = fh.read().replace("{{ORIGIN}}", _origin() + api_url("/").rstrip("/"))
     return Response(spec, mimetype="application/json",
                     headers={"Cache-Control": "public, max-age=300", "Access-Control-Allow-Origin": "*"})

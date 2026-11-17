@@ -4,16 +4,10 @@ from __future__ import annotations
 
 from dash import html
 
+from pages.pages_constants import BENCHMARK_TITLE as TITLE, BENCHMARK_DIMENSIONS as DIMENSIONS
 from utils.icons import icon
 from utils.routes import href
 from utils.ui import card, card_content, card_header, card_title, link, link_button
-
-TITLE = "Benchmark — PIM Policy Profiles AI"
-
-DIMENSIONS = [
-    "Strategic planning", "Project appraisal", "Project selection", "Budgeting & financing",
-    "Implementation & monitoring", "Asset management", "PPP framework", "Transparency & accountability",
-]
 
 
 def layout(params=None):

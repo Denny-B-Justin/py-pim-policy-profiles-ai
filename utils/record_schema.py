@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from utils import constants as C
+import constants as C
 
 JURISDICTION_LEVELS = tuple(C.JURISDICTION_LEVELS)
 RECORD_STATUSES = tuple(C.RECORD_STATUSES)

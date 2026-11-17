@@ -12,14 +12,14 @@ import io
 import logging
 import re
 from dataclasses import dataclass
-from pathlib import Path
+import constants as C
 
 log = logging.getLogger(__name__)
 
-FONTS_DIR = Path(__file__).resolve().parent.parent / "fonts"
+FONTS_DIR = C.FONTS_DIR
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 PDF_MIME = "application/pdf"
-MAX_CONTENT = 500_000
+MAX_CONTENT = C.BRIEFING_MAX_CONTENT
 
 # C0 control characters illegal in OOXML (python-docx raises on them; LLM output can contain a stray form feed).
 _CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")

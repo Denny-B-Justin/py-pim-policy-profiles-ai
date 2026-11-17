@@ -2,7 +2,7 @@
 Search-index maintenance (port of `web/lib/rag-sync.ts` + `rag/app/ingestion/pipeline.py`).
 
 Instead of POSTing to a separate RAG service, the Dash app extracts + chunks the stored file itself and
-writes the chunk rows to `pim_document_chunks`.  Hooks are called (in background threads) after every
+writes the chunk rows to `policy_repo_document_chunks`.  Hooks are called (in background threads) after every
 document upload / delete / record status change; `reconcile()` repairs drift (the nightly cron of the
 original).
 """
@@ -12,12 +12,13 @@ from __future__ import annotations
 import logging
 import threading
 
+import constants as C
 from utils import db, extract, queries, rag, storage
 from utils.chunking import chunk_pages
 from utils.db import table
 
 log = logging.getLogger(__name__)
-_BATCH = 20
+_BATCH = C.INDEX_BATCH
 
 
 def delete_chunks(record_id: str, lang_type: str | None = None) -> None:

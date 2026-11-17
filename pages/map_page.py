@@ -9,17 +9,13 @@ from __future__ import annotations
 
 from dash import Input, Output, dcc, html
 
+from pages.pages_constants import (
+    MAP_TITLE as TITLE,
+    MAP_COLORS as COLORS,
+    MAP_NO_DATA_FILL as NO_DATA_FILL,
+    MAP_LEGEND as LEGEND,
+)
 from utils import queries
-
-TITLE = "Global Map — PIM Policy Profiles AI"
-
-COLORS = {"english": "#374291", "nonEnglish": "#f26b23"}
-NO_DATA_FILL = "#e8edf2"
-LEGEND = [
-    (COLORS["english"], "Original language English"),
-    (COLORS["nonEnglish"], "Original language not English"),
-    (NO_DATA_FILL, "No policy data"),
-]
 
 
 def _countries() -> list[dict]:

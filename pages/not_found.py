@@ -2,11 +2,10 @@
 
 from dash import html
 
+from pages.pages_constants import NOT_FOUND_TITLE as TITLE
 from utils.icons import icon
 from utils.routes import href
 from utils.ui import button, link
-
-TITLE = "PIM Policy Profiles AI"
 
 
 def layout(params=None):

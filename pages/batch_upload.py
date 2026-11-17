@@ -15,32 +15,25 @@ import logging
 
 from dash import Input, Output, State, dcc, html, no_update
 
+import constants as C
+from pages.pages_constants import (
+    BATCH_UPLOAD_TITLE as TITLE,
+    BATCH_UPLOAD_STEPS as STEPS,
+    BATCH_UPLOAD_STATUS as STATUS,
+)
 from utils import auth, batch, jobs
-from utils import constants as C
 from utils.icons import icon
 from utils.routes import asset, href
 from utils.ui import badge, button, button_class, link, select
 
 log = logging.getLogger(__name__)
 
-TITLE = "Batch upload — PIM Repository"
 
-TEMPLATE_URL = "templates/PIM_Country_Policy_Profile_Batch_Upload_Template.xlsx"
-DATADICT_URL = "templates/PIM_Batch_Upload_Data_Dictionary.docx"
-STEPS = [("upload", "Upload"), ("preview", "Review"), ("run", "Import")]
+TEMPLATE_URL = C.BATCH_TEMPLATE_ASSET
+DATADICT_URL = C.BATCH_DATADICT_ASSET
 SHOW, HIDE = {}, {"display": "none"}
 ALERT = "rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
 TH = "px-3 py-2 font-medium text-muted-foreground"
-
-STATUS = {
-    "pending": ("bg-blue-50 text-blue-700 border-blue-200", "Ready"),
-    "invalid": ("bg-red-50 text-red-700 border-red-200", "Error"),
-    "skipped": ("bg-gray-100 text-gray-600 border-gray-200", "Skip (duplicate)"),
-    "processing": ("bg-amber-50 text-amber-700 border-amber-200", "Working…"),
-    "created": ("bg-green-50 text-green-700 border-green-200", "Created"),
-    "updated": ("bg-green-50 text-green-700 border-green-200", "Updated"),
-    "failed": ("bg-red-50 text-red-700 border-red-200", "Failed"),
-}
 
 
 def status_badge(status: str):

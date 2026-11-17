@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from dash import Input, Output, State, dcc, html, no_update
 
+from pages.pages_constants import REGISTER_TITLE as TITLE
 from utils import auth
 from utils.icons import icon
 from utils.routes import href
 from utils.toast import toast
 from utils.ui import button, card, card_content, card_header, card_title, label, link, text_input
 
-TITLE = "Create an account — PIM Policy Profiles AI"
 _ALERT = "rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
 
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dash import html
 
-from utils import constants as C
+import constants as C
 from utils.icons import icon
 from utils.ui import badge, cn
 

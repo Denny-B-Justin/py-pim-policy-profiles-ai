@@ -6,6 +6,7 @@ from datetime import datetime
 
 from dash import Input, Output, dcc, html
 
+from pages.pages_constants import COUNTRIES_TITLE as TITLE, COUNTRIES_PIMA_STATUS_TEXT as STATUS_TEXT
 from utils import imf_pima, queries
 from utils.components import fmt_date_gb, fmt_num, star
 from utils.countries_data import countries_data
@@ -13,14 +14,6 @@ from utils.icons import icon
 from utils.routes import api_url, href
 from utils.ui import cn, link, text_input
 
-TITLE = "Countries — PIM Repository"
-
-STATUS_TEXT = {
-    "published": "full report published",
-    "summary": "high-level summary or IMF reference only (no full report)",
-    "unpublished": "conducted, report not published",
-    "unknown": "conducted",
-}
 _A_BLANK = dict(target="_blank", rel="noopener noreferrer")
 
 

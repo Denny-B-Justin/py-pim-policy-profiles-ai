@@ -14,14 +14,15 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
+import constants as C
 from utils import db, queries
 from utils.db import table
 
 log = logging.getLogger(__name__)
 
-TIMEOUT = 12
-MAX_REDIRECTS = 5
-_HEADERS = {"user-agent": "PIM-LinkCheck/1.0"}
+TIMEOUT = C.LINK_CHECK_TIMEOUT
+MAX_REDIRECTS = C.LINK_CHECK_MAX_REDIRECTS
+_HEADERS = {"user-agent": C.LINK_CHECK_USER_AGENT}
 
 
 def is_private_ip(ip: str) -> bool:

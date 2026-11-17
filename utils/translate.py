@@ -13,18 +13,17 @@ from __future__ import annotations
 
 import io
 import logging
-import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
-from utils import constants as C
+import constants as C
 from utils import extract, mai_client
 
 log = logging.getLogger(__name__)
 
-MAX_TRANSLATE_CHARS = int(os.environ.get("PIM_MAX_TRANSLATE_CHARS", "600000"))
-_WORKERS = int(os.environ.get("PIM_TRANSLATE_WORKERS", "3"))
+MAX_TRANSLATE_CHARS = C.MAX_TRANSLATE_CHARS
+_WORKERS = C.TRANSLATE_WORKERS
 
 _DOC_SYSTEM = (
     "Translate the user's text into English. It is an excerpt of an official public-finance / public investment "

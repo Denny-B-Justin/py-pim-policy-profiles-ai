@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from dash import Input, Output, State, dcc, html, no_update
 
+from pages.pages_constants import SIGNIN_TITLE as TITLE
 from utils import auth
 from utils.icons import icon
 from utils.routes import href
 from utils.toast import toast
 from utils.ui import button, card, card_content, card_header, card_title, label, link, text_input
 
-TITLE = "Sign in — PIM Policy Profiles AI"
 _ALERT = "rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive"
 
 

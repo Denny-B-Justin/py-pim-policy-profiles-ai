@@ -10,8 +10,10 @@ import time
 from dash import ALL, Input, Output, State, ctx, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 
+import constants as C
 from pages import not_found
-from utils import auth, constants as C, documents, queries
+from pages.pages_constants import RECORD_DETAIL_TITLE as TITLE
+from utils import auth, documents, queries
 from utils.audit import log_audit
 from utils.components import (machine_readable_badge, original_link_button, record_status_badge, superseded_href,
                               superseded_link_kind, tier_badge, title_class)
@@ -25,7 +27,6 @@ from utils.ui import (DIALOG_HIDE, DIALOG_SHOW, badge, button, button_class, cn,
 
 log = logging.getLogger(__name__)
 
-TITLE = "Record — PIM Repository"
 H2 = "text-sm font-semibold uppercase tracking-wide text-muted-foreground"
 
 

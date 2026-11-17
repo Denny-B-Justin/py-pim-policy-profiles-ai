@@ -2,7 +2,7 @@
 
 Dash port of the Next.js + FastAPI "PIM Policy Profiles AI" application, built to run on **Posit Connect** (Python 3.11.9).
 
-* Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.pim_*` tables, documents in the UC Volume `pim_documents`
+* Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.policy_repo_*` tables, documents in the UC Volume `policy_repo_documents`
 * AI: **Posit mAI Gateway** — two variables (`MAI_BASE_URL`, `MAI_ENDPOINT`), no API keys
 * Pages: one site, routed by query string — `/?page=<name>` (home is `/` or `/?page=home`)
 
@@ -55,7 +55,7 @@ Copy `.env.sample` to `.env` locally; on Connect set the same names under **Cont
 | `ADMIN_INVITE_CODE` | recommended | required to register after the first account |
 | `CRON_SECRET`, `RAG_ADMIN_KEY`, `EXPORT_ALLOWED_ORIGINS`, `PUBLIC_BASE_URL` | optional | see `.env.sample` |
 
-`CONNECT_CONTENT_GUID` is set by Posit Connect itself and is sent to the gateway as `X-Posit-App-Id`; never define it. The app never sends an `Authorization` header to the gateway. Real Databricks credentials are read from the environment only — `utils/constants.py` holds the variable names, catalog and schema, not secrets.
+`CONNECT_CONTENT_GUID` is set by Posit Connect itself and is sent to the gateway as `X-Posit-App-Id`; never define it. The app never sends an `Authorization` header to the gateway. Real Databricks credentials are read from the environment only — `constants.py` holds the variable names, catalog and schema, not secrets.
 
 ## Set up the data (once)
 
@@ -101,9 +101,9 @@ python app.py                           # demo login: demo-user@example.org / lo
 
 | Original | Dash app |
 |---|---|
-| Neon PostgreSQL (Drizzle) | Unity Catalog Delta tables `pim_*` |
-| Vercel Blob | UC Volume `pim_documents` |
-| pgvector + embeddings (LangChain) | BM25 (SQLite FTS5, in process) over `pim_document_chunks` — the mAI gateway has no embedding endpoint |
+| Neon PostgreSQL (Drizzle) | Unity Catalog Delta tables `policy_repo_*` |
+| Vercel Blob | UC Volume `policy_repo_documents` |
+| pgvector + embeddings (LangChain) | BM25 (SQLite FTS5, in process) over `policy_repo_document_chunks` — the mAI gateway has no embedding endpoint |
 | OpenAI / Anthropic / DeepL calls, streamed | mAI gateway only; no streaming, so long jobs run in the background and the page polls for progress |
 | DeepL translation | translation through mAI (`translation_source` = `mai`) |
 | Google sign-in (Auth.js) | Posit Connect identity, or local e-mail + password accounts (first account bootstraps; later ones need `ADMIN_INVITE_CODE`) |
@@ -116,7 +116,7 @@ python app.py                           # demo login: demo-user@example.org / lo
 
 * `dcc.Upload` sends files as base64 in one request, so the practical upload size is bounded by Connect's *max request size* (and the app caps batch downloads at 25 MB per file).
 * Delta has no enforced unique constraints or row locks; the app checks before it writes (details in the migration guide).
-* Local accounts and partner API keys live in `pim_users` / `pim_partner_api_keys`; API keys are stored as SHA-256 hashes and shown once (`python scripts/issue_api_key.py`).
+* Local accounts and partner API keys live in `policy_repo_users` / `policy_repo_partner_api_keys`; API keys are stored as SHA-256 hashes and shown once (`python scripts/issue_api_key.py`).
 * A cold SQL warehouse makes the first request slow; read queries are cached for `PIM_CACHE_SECONDS` (60 s).
 
 ## Maintenance

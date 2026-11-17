@@ -9,7 +9,7 @@ templating engine: LangChain `ChatPromptTemplate` → plain `str.format` (identi
 
 from __future__ import annotations
 
-from utils import constants as C
+import constants as C
 
 # ── Coach chat ────────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """\

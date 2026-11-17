@@ -12,6 +12,11 @@ from datetime import datetime, timezone
 
 from dash import Input, Output, State, ctx, dcc, html, no_update
 
+from pages.pages_constants import (
+    POLICY_CHANGES_TITLE as TITLE,
+    POLICY_CHANGES_KIND_STYLE as KIND_STYLE,
+    POLICY_CHANGES_TIER_DESC as TIER_DESC,
+)
 from utils import changes, export, queries
 from utils.auth import client_ip
 from utils.components import original_link_button, tier_badge
@@ -21,17 +26,6 @@ from utils.routes import href
 from utils.toast import toast
 from utils.ui import button, cn, link, select, spinner, text_input
 
-TITLE = "PIM Policy Changes — PIM Policy Profiles AI"
-
-KIND_STYLE = {
-    "new_instrument": "border-blue-200 bg-blue-50 text-blue-700",
-    "revised_instrument": "border-violet-200 bg-violet-50 text-violet-700",
-    "superseded": "border-amber-200 bg-amber-50 text-amber-700",
-    "added_to_profile": "border-emerald-200 bg-emerald-50 text-emerald-700",
-    "updated_in_profile": "border-slate-200 bg-slate-50 text-slate-600",
-}
-TIER_DESC = {1: "Primary legislation", 2: "Secondary regulations", 3: "Procedural & methodological guidance",
-             4: "Strategies & plans"}
 _DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _SHOW, _HIDE = {"display": "inline-block"}, {"display": "none"}
 

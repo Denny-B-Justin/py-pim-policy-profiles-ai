@@ -7,7 +7,7 @@ Replaces NextAuth (Google + email/password).  Identity sources, in priority orde
    required" (or any restricted audience) Connect adds the `RStudio-Connect-Credentials`
    header (JSON: {"user": "<username>", "groups": [...]}) to every request.  Those users are
    treated as signed in – nothing else to configure.
-2. **Local account** – email + bcrypt password hash in the `pim_users` UC table, kept in the
+2. **Local account** – email + bcrypt password hash in the `policy_repo_users` UC table, kept in the
    signed Flask session cookie (same rules as the original: the first account bootstraps the
    admin, later accounts need `ADMIN_INVITE_CODE`).
 
@@ -23,7 +23,7 @@ from typing import Any
 import bcrypt
 from flask import request, session
 
-from utils import constants as C
+import constants as C
 from utils import db
 from utils.db import table
 

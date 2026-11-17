@@ -1,5 +1,5 @@
 """
-Load the 196-country reference list (data/countries.json) into pim_countries.
+Load the 196-country reference list (data/countries.json) into policy_repo_countries.
 
 The app needs these rows for the country pick-lists, names on every page, the map and the IMF PIMA refresh.
 Run it once on a NEW Unity Catalog setup (if you migrated from the old Postgres database, `migrate_from_postgres.py`
@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from utils import constants as C  # noqa: E402
+import constants as C  # noqa: E402
 from utils import db  # noqa: E402
 from utils.db import table  # noqa: E402
 
@@ -31,7 +31,7 @@ def main() -> int:
     ap.add_argument("--update", action="store_true", help="also update rows that already exist")
     args = ap.parse_args()
 
-    data = json.loads((C.BASE_DIR / "data" / "countries.json").read_text(encoding="utf-8"))
+    data = json.loads(C.COUNTRIES_JSON.read_text(encoding="utf-8"))
     have = {str(r["iso3"]).strip() for r in db.query(f"SELECT iso3 FROM {table('countries')}")}
     rows = [{"iso3": c["iso3"], "name": c["name"], "gdp_2024_bn": c["gdpBn"], "pub_inv_pct_gdp": c["pubInvPctGdp"],
              "pub_inv_2024_bn": c["pubInvBn"]} for c in data]

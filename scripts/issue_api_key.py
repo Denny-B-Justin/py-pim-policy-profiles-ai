@@ -4,7 +4,7 @@ Issue (or revoke) a partner API key for `/api/v1/*`  – port of `web/scripts/is
     python scripts/issue_api_key.py --name "Acme Ministry" --email ops@example.org --rate-limit 120
     python scripts/issue_api_key.py --revoke <key id>
 
-The plaintext key is printed ONCE; only its SHA-256 hash is stored in `pim_partner_api_keys`.
+The plaintext key is printed ONCE; only its SHA-256 hash is stored in `policy_repo_partner_api_keys`.
 Uses the same database settings as the app (DATABRICKS_* env vars, or PIM_DB_BACKEND=sqlite for local tests).
 """
 

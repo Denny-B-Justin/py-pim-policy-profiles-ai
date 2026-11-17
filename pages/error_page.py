@@ -2,10 +2,9 @@
 
 from dash import html
 
+from pages.pages_constants import ERROR_PAGE_TITLE as TITLE
 from utils.routes import href
 from utils.ui import button, link
-
-TITLE = "PIM Policy Profiles AI"
 
 
 def layout(params=None):

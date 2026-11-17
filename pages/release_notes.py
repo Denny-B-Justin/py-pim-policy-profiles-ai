@@ -7,21 +7,13 @@ from datetime import datetime
 
 from dash import html
 
-from utils import constants as C
+import constants as C
+from pages.pages_constants import RELEASE_NOTES_TITLE as TITLE, RELEASE_NOTES_CHANGE_TYPE_STYLES as CHANGE_TYPE_STYLES
 from utils.ui import badge, separator
-
-TITLE = "Release notes · PIM Policy Profiles AI"
-
-CHANGE_TYPE_STYLES = {
-    "feature": dict(label="New", cls="bg-blue-50 text-blue-700 border-blue-200", dot="bg-blue-500"),
-    "improvement": dict(label="Improved", cls="bg-violet-50 text-violet-700 border-violet-200", dot="bg-violet-500"),
-    "fix": dict(label="Fixed", cls="bg-emerald-50 text-emerald-700 border-emerald-200", dot="bg-emerald-500"),
-    "breaking": dict(label="Breaking", cls="bg-red-50 text-red-700 border-red-200", dot="bg-red-500"),
-}
 
 
 def _releases() -> list[dict]:
-    with open(C.BASE_DIR / "data" / "release_notes.json", encoding="utf-8") as f:
+    with open(C.RELEASE_NOTES_JSON, encoding="utf-8") as f:
         return json.load(f)
 
 

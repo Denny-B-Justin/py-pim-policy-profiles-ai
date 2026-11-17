@@ -4,25 +4,21 @@ from __future__ import annotations
 
 from dash import html
 
+import constants as C
 from pages import not_found
+from pages.pages_constants import (
+    COUNTRY_DETAIL_TITLE as TITLE,
+    COUNTRY_DETAIL_LEVEL_ORDER as LEVEL_ORDER,
+    COUNTRY_DETAIL_LEVEL_META as LEVEL_META,
+)
 from utils import queries
 from utils.components import (fmt_size, machine_readable_badge, original_link_button, record_status_badge,
                               superseded_href, superseded_link_kind, tier_badge, tier_label, title_class)
-from utils import constants as C
 from utils.countries_data import countries_by_iso3
 from utils.icons import icon
 from utils.routes import api_url, href
 from utils.ui import button, button_class, cn, link
 from utils.widgets import translate_button, translate_dialog
-
-TITLE = "Policies — PIM Repository"
-
-LEVEL_ORDER = ["national", "subnational", "supranational"]
-LEVEL_META = {
-    "national": dict(label="National", badge="border-slate-200 bg-slate-50 text-slate-600", dot="bg-slate-400"),
-    "subnational": dict(label="Sub-national", badge="border-emerald-200 bg-emerald-50 text-emerald-700", dot="bg-emerald-500"),
-    "supranational": dict(label="Supranational", badge="border-violet-200 bg-violet-50 text-violet-700", dot="bg-violet-500"),
-}
 
 
 def level_meta(level: str) -> dict:

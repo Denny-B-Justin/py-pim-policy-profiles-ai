@@ -8,20 +8,19 @@ Every page is addressed by query string:   /?page=home   /?page=country&iso3=LTU
 from __future__ import annotations
 
 import logging
-import os
 import secrets
 from datetime import timedelta
 
 import dash
 from dash import Input, Output, dcc, html
 
+import constants as C
 from pages import load, load_all
 from pages import error_page, not_found
-from utils import constants as C
 from utils.layout import shell
 from utils.routes import parse_search
 
-logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
+logging.basicConfig(level=C.LOG_LEVEL,
                     format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("pim")
 
@@ -41,8 +40,9 @@ server = app.server
 
 # Signed session cookie for local accounts (set PIM_SECRET_KEY so all Connect processes share it).
 server.secret_key = C.SECRET_KEY or secrets.token_hex(32)
-server.config.update(SESSION_COOKIE_NAME="pim_session", SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
-                     PERMANENT_SESSION_LIFETIME=timedelta(days=30), MAX_CONTENT_LENGTH=C.MAX_UPLOAD_BYTES + 1024 * 1024)
+server.config.update(SESSION_COOKIE_NAME=C.SESSION_COOKIE_NAME, SESSION_COOKIE_HTTPONLY=True,
+                     SESSION_COOKIE_SAMESITE=C.SESSION_COOKIE_SAMESITE,
+                     PERMANENT_SESSION_LIFETIME=timedelta(days=C.SESSION_LIFETIME_DAYS), MAX_CONTENT_LENGTH=C.MAX_UPLOAD_BYTES + 1024 * 1024)
 if not C.SECRET_KEY:
     log.warning("PIM_SECRET_KEY is not set – local sign-ins will not survive a restart / other processes.")
 
@@ -91,4 +91,4 @@ from utils import api_routes  # noqa: E402  (JSON / file endpoints under /api, p
 api_routes.register(server)
 
 if __name__ == "__main__":
-    app.run(debug=os.environ.get("DASH_DEBUG", "0") == "1", host="0.0.0.0", port=int(os.environ.get("PORT", 8050)))
+    app.run(debug=C.DASH_DEBUG, host=C.HOST, port=C.PORT)

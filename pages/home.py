@@ -4,39 +4,11 @@ from __future__ import annotations
 
 from dash import html
 
+from pages.pages_constants import HOME_TITLE as TITLE, HOME_MODULES as MODULES
 from utils import queries
 from utils.icons import icon
 from utils.routes import href
 from utils.ui import card, card_content, card_description, card_header, card_title, cn, link, link_button
-
-TITLE = "PIM Policy Profiles AI"
-
-MODULES = [
-    dict(title="Browse curated policies",
-         description="View the latest curated PIM policy and strategy documents for any country, in English or the "
-                     "original language.",
-         page="countries", cta="Browse countries", icon="globe", icon_bg="bg-sky-50", icon_fg="text-sky-600"),
-    dict(title="Track policy changes",
-         description="See what changed in a country's PIM framework — new, revised and superseded laws, regulations, "
-                     "guidance and strategies — since the latest profile update or since a date you choose.",
-         page="policy-changes", cta="Check changes", icon="history", icon_bg="bg-teal-50", icon_fg="text-teal-600"),
-    dict(title="Contribute or update",
-         description="Add new country records, upload original-language and translated source documents, and curate "
-                     "metadata.",
-         page="record-new", cta="Add a record", icon="upload", icon_bg="bg-emerald-50", icon_fg="text-emerald-600"),
-    dict(title="AI Coach analytics",
-         description="Ask country-specific questions on appraisal, transparency, PPPs, briefing, and more. Cited "
-                     "answers grounded in the curated corpus.",
-         page="coach", cta="Open the Coach", icon="sparkles", icon_bg="bg-violet-50", icon_fg="text-violet-600"),
-    dict(title="Benchmark to peers",
-         description="Compare a country to frontier good-practice and peer jurisdictions across the core PIM "
-                     "dimensions.",
-         page="benchmark", cta="Compare countries", icon="activity", icon_bg="bg-amber-50", icon_fg="text-amber-600"),
-    dict(title="Plug-in APIs",
-         description="Documented endpoints for embedding repository data, AI analytics, and benchmarks into national "
-                     "ePIM-CBA deployments.",
-         page="api-docs", cta="View API docs", icon="plug", icon_bg="bg-rose-50", icon_fg="text-rose-600"),
-]
 
 
 def _stat_tile(label: str, value: int):

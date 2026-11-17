@@ -12,7 +12,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import tempfile
 import threading
 import time
 import uuid
@@ -20,13 +19,15 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 
+import constants as C
+
 log = logging.getLogger(__name__)
 
-JOBS_DIR = Path(os.environ.get("PIM_JOBS_DIR") or Path(tempfile.gettempdir()) / "pim_jobs")
+JOBS_DIR = C.JOBS_DIR
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
-_pool = ThreadPoolExecutor(max_workers=int(os.environ.get("PIM_JOB_WORKERS", "6")), thread_name_prefix="pim-job")
+_pool = ThreadPoolExecutor(max_workers=C.JOB_WORKERS, thread_name_prefix="pim-job")
 _lock = threading.Lock()
-_TTL = 6 * 3600
+_TTL = C.JOB_TTL_SECONDS
 
 
 def _path(job_id: str) -> Path:

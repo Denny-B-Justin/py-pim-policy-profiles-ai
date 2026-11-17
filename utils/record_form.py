@@ -16,7 +16,8 @@ import time
 from dash import ALL, Input, Output, State, ctx, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 
-from utils import auth, check_link, constants as C, documents, indexer, jobs, queries
+import constants as C
+from utils import auth, check_link, documents, indexer, jobs, queries
 from utils.audit import log_audit
 from utils.components import fmt_size
 from utils.icons import icon

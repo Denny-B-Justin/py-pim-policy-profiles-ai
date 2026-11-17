@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dash import Input, Output, dcc, html
 
-TITLE = "API — PIM Policy Profiles AI"
+from pages.pages_constants import API_DOCS_TITLE as TITLE
 
 _CODE = "rounded bg-foreground/10 px-1.5 py-0.5 text-xs"
 

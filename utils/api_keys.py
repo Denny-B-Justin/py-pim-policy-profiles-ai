@@ -10,11 +10,12 @@ from __future__ import annotations
 import hashlib
 import secrets
 
+import constants as C
 from utils import db
 from utils.db import table
 
-KEY_PREFIX = "pim_v1_"
-KEY_RANDOM_HEX_CHARS = 32       # 128 bits of entropy
+KEY_PREFIX = C.API_KEY_PREFIX
+KEY_RANDOM_HEX_CHARS = C.API_KEY_RANDOM_HEX_CHARS
 
 
 def generate_plaintext_key() -> str:

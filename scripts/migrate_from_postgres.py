@@ -6,25 +6,25 @@ One-off migration:  Neon / PostgreSQL (the Next.js app's database)  →  Azure D
     export PIM_SOURCE_DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
     export DATABRICKS_SERVER_HOSTNAME=… DATABRICKS_HTTP_PATH=… DATABRICKS_CLIENT_ID=… DATABRICKS_CLIENT_SECRET=…
 
-    python scripts/create_tables.py                     # 1. create the pim_* Delta tables + (see docs) the volume
+    python scripts/create_tables.py                     # 1. create the policy_repo_* Delta tables + (see docs) the volume
     python scripts/migrate_from_postgres.py --dry-run   # 2. row counts only
     python scripts/migrate_from_postgres.py             # 3. copy everything (idempotent – rows already present are skipped)
-    python scripts/reindex.py --lang all                 # 4. rebuild the search index (pim_document_chunks) from the files
+    python scripts/reindex.py --lang all                 # 4. rebuild the search index (policy_repo_document_chunks) from the files
 
 What is copied (source table → UC table)
-    countries            → pim_countries            policy_records       → pim_policy_records
-    documents            → pim_documents            (blob_url → file_path; the file is copied to the UC Volume)
-    users                → pim_users                audit_logs           → pim_audit_logs
-    partner_api_keys     → pim_partner_api_keys     batch_imports        → pim_batch_imports
-    batch_import_rows    → pim_batch_import_rows    (jsonb raw / errors → JSON text in STRING columns)
-    briefings_cache      → pim_briefings_cache      imf_pima_assessments → pim_imf_pima_assessments
+    countries            → policy_repo_countries            policy_records       → policy_repo_policy_records
+    documents            → policy_repo_documents            (blob_url → file_path; the file is copied to the UC Volume)
+    users                → policy_repo_users                audit_logs           → policy_repo_audit_logs
+    partner_api_keys     → policy_repo_partner_api_keys     batch_imports        → policy_repo_batch_imports
+    batch_import_rows    → policy_repo_batch_import_rows    (jsonb raw / errors → JSON text in STRING columns)
+    briefings_cache      → policy_repo_briefings_cache      imf_pima_assessments → policy_repo_imf_pima_assessments
 
 What is NOT copied (and why – see docs/DATABRICKS_MIGRATION.md)
     langchain_pg_collection / langchain_pg_embedding / chunk_parents   pgvector index – the mAI gateway has no embedding
-                                                                        endpoint; retrieval is BM25 over pim_document_chunks,
+                                                                        endpoint; retrieval is BM25 over policy_repo_document_chunks,
                                                                         which `scripts/reindex.py` rebuilds from the documents.
     accounts / sessions / verification_tokens                          Auth.js (Google OAuth) tables – replaced by Posit Connect
-                                                                        sign-in or the local pim_users accounts.
+                                                                        sign-in or the local policy_repo_users accounts.
 
 Credentials are read from the environment only – nothing is stored in this file.
 """
@@ -44,7 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import requests  # noqa: E402
 
-from utils import constants as C  # noqa: E402
+import constants as C  # noqa: E402
 from utils import db, storage  # noqa: E402
 from utils.db import table  # noqa: E402
 from utils.schema import SCHEMA  # noqa: E402
@@ -211,7 +211,7 @@ def main() -> int:
     with psycopg.connect(args.source_url) as conn:
         report = migrate(conn, tables, args.dry_run, args.skip_files)
     if not args.dry_run:
-        print("\nNext: python scripts/reindex.py --lang all   (rebuilds pim_document_chunks – the pgvector index is not migrated)")
+        print("\nNext: python scripts/reindex.py --lang all   (rebuilds policy_repo_document_chunks – the pgvector index is not migrated)")
         bad = [t for t, r in report.items() if r["target"] != r["source"] or r["failed"]]
         if bad:
             print("Check:", ", ".join(bad))

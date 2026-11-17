@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from utils import constants as C
+import constants as C
 from utils import jobs, mai_client, prompts, rag
 
 log = logging.getLogger(__name__)

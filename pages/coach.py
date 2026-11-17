@@ -11,11 +11,10 @@ from __future__ import annotations
 from dash import ALL, Input, Output, ctx, html, no_update
 
 from pages import policy_changes
+from pages.pages_constants import COACH_TITLE as TITLE
 from utils import briefing_panel, briefings, chat_ui
 from utils.icons import icon
 from utils.ui import cn
-
-TITLE = "PIM Policy Profiles AI"
 
 # Menu order of the original: the briefing registry, then Policy Changes, then the chatbot.
 _ICONS = {"profile": "file-text", "transparency": "shield-check"}

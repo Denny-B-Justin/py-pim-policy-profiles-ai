@@ -14,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-from utils import constants as C
+import constants as C
 from utils import db
 from utils.db import table, to_bool, to_dt, to_int
 

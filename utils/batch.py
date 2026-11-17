@@ -8,7 +8,7 @@ Flow (same as the original)
   2. `run_batch`        job body: claims one row at a time, creates/updates the record, fetches the linked documents
                         (SSRF-guarded), optionally machine-translates a missing English version with the mAI gateway
                         (the original used DeepL) and stores the result per row.
-Rows live in `pim_batch_import_rows` (raw / errors are JSON text – they were Postgres jsonb).
+Rows live in `policy_repo_batch_import_rows` (raw / errors are JSON text – they were Postgres jsonb).
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from urllib.parse import unquote, urljoin, urlparse
 
 import requests
 
-from utils import constants as C
+import constants as C
 from utils import db, documents, extract, indexer, mai_client, queries, translate
 from utils.audit import log_audit
 from utils.check_link import assert_public_host
@@ -39,11 +39,11 @@ COLUMNS = (
     "overview", "external_link", "comment",
 )
 REQUIRED = ("country", "name_eng")
-ACCEPTED_EXT = ("pdf", "doc", "docx", "txt")
-MAX_REDIRECTS = 5
-FETCH_TIMEOUT = 30
-MAX_DOC_BYTES = 25 * 1024 * 1024
-STUCK_ROW = timedelta(minutes=5)       # a row "processing" for longer than this is assumed abandoned
+ACCEPTED_EXT = tuple(e.lstrip(".") for e in C.ALLOWED_DOC_EXTENSIONS)
+MAX_REDIRECTS = C.BATCH_MAX_REDIRECTS
+FETCH_TIMEOUT = C.BATCH_FETCH_TIMEOUT
+MAX_DOC_BYTES = C.BATCH_MAX_DOC_BYTES
+STUCK_ROW = timedelta(minutes=C.BATCH_STUCK_ROW_MINUTES)   # a row "processing" for longer than this is assumed abandoned
 LANG_LABELS = dict(C.NATIVE_LANGUAGES)
 
 

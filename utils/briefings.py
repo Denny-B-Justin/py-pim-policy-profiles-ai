@@ -14,7 +14,7 @@ import logging
 import re
 from collections import Counter
 
-from utils import constants as C
+import constants as C
 from utils import jobs, mai_client, prompts, queries, rag, translate
 
 log = logging.getLogger(__name__)
@@ -48,10 +48,9 @@ BRIEFING_LIST = [
     },
 ]
 SCOPE_RE = re.compile(r"^(all|national|sub:.{1,100})$")
-MIN_CONTENT = 100
-MAX_CONTENT = 500_000
-# Cap on the visible text of long-form briefings (original: 12288 incl. reasoning for the profile).
-PROFILE_MAX_TOKENS = 12288
+MIN_CONTENT = C.BRIEFING_MIN_CONTENT
+MAX_CONTENT = C.BRIEFING_MAX_CONTENT
+PROFILE_MAX_TOKENS = C.PROFILE_MAX_TOKENS
 
 
 def get_briefing(key: str) -> dict | None:

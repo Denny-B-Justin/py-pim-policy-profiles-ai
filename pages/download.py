@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from dash import Input, Output, State, html, no_update
 
+from pages.pages_constants import DOWNLOAD_TITLE as TITLE
 from utils import queries
 from utils.components import fmt_size
 from utils.icons import icon
 from utils.routes import api_url, href
 from utils.ui import badge, button_class, select
-
-TITLE = "Download — PIM Repository"
 
 
 def _doc_row(d: dict):

@@ -11,7 +11,7 @@ from __future__ import annotations
 import base64
 import logging
 
-from utils import constants as C
+import constants as C
 from utils import extract, indexer, jobs, queries, storage
 
 log = logging.getLogger(__name__)

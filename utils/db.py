@@ -21,7 +21,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
-from utils import constants as C
+import constants as C
 
 log = logging.getLogger(__name__)
 

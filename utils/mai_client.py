@@ -31,7 +31,7 @@ from typing import Any
 
 import requests
 
-from utils import constants as C
+import constants as C
 
 log = logging.getLogger(__name__)
 

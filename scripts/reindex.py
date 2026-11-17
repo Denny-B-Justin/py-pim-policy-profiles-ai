@@ -1,5 +1,5 @@
 """
-Rebuild the search index (pim_document_chunks) from the stored documents.
+Rebuild the search index (policy_repo_document_chunks) from the stored documents.
 
     python scripts/reindex.py                 # English documents (clears the index first) – what the app's RAG admin page does
     python scripts/reindex.py --lang all      # English + original-language documents

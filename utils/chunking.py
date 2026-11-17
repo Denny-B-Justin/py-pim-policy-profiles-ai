@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import re
 
-CHUNK_SIZE = 1000
-PARENT_SIZE = max(CHUNK_SIZE * 2, 1800)   # 2000
+import constants as C
+
+CHUNK_SIZE = C.CHUNK_SIZE
+PARENT_SIZE = C.CHUNK_PARENT_CHARS   # 2000
 
 # Legal section markers seen in PIM policy documents across jurisdictions (identical to the original).
 _LEGAL_SECTION_PATTERNS = [

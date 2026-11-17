@@ -8,10 +8,12 @@ from __future__ import annotations
 import io
 import re
 
+import constants as C
+
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")   # same scrub as rag/ingestion/sanitize.py
-SAMPLE_PAGES = 6
-MIN_CHARS_PER_PAGE = 40
-MAX_DETECT_BYTES = 40 * 1024 * 1024
+SAMPLE_PAGES = C.EXTRACT_SAMPLE_PAGES
+MIN_CHARS_PER_PAGE = C.EXTRACT_MIN_CHARS_PER_PAGE
+MAX_DETECT_BYTES = C.EXTRACT_MAX_DETECT_BYTES
 
 
 def clean(text: str) -> str:

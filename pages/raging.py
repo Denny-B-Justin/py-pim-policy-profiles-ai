@@ -20,26 +20,28 @@ import logging
 from dash import Input, Output, State, ctx, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 
+import constants as C
+from pages.pages_constants import RAGING_BUTTON_LABELS, RAGING_TITLE as TITLE
 from utils import auth, indexer, jobs, rag
-from utils import constants as C
 from utils.audit import log_audit
 from utils.routes import asset, href
 from utils.ui import cn, loading_spinner
 
 log = logging.getLogger(__name__)
 
-TITLE = "RAG — PIM Policy Profiles AI"
 
 CARD = "rounded-lg border bg-muted/40 p-5"
 BTN = "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
 BTN_DISABLED = "disabled:opacity-50 disabled:cursor-not-allowed"
 BUTTONS = {
-    "all": ("Re-index All Documents", cn(BTN, "bg-primary text-primary-foreground hover:opacity-90", BTN_DISABLED)),
-    "eng": ("Re-index English Only", cn(BTN, "border border-primary text-primary hover:bg-primary/10", BTN_DISABLED)),
-    "ori": ("Add Original Language Docs",
+    "all": (RAGING_BUTTON_LABELS["all"],
+            cn(BTN, "bg-primary text-primary-foreground hover:opacity-90", BTN_DISABLED)),
+    "eng": (RAGING_BUTTON_LABELS["eng"],
+            cn(BTN, "border border-primary text-primary hover:bg-primary/10", BTN_DISABLED)),
+    "ori": (RAGING_BUTTON_LABELS["ori"],
             cn(BTN, "border border-amber-500 text-amber-700 hover:bg-amber-50", BTN_DISABLED)),
 }
-FILTERS = ("all", "eng", "ori")
+FILTERS = tuple(RAGING_BUTTON_LABELS)
 
 
 # ── pieces ──────────────────────────────────────────────────────────────────────────────

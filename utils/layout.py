@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dash import dcc, html
 
-from utils import constants as C
+import constants as C
 from utils.icons import icon
 from utils.routes import asset, href
 from utils.ui import cn, link, separator

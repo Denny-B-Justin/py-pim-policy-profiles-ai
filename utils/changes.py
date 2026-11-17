@@ -18,7 +18,7 @@ import re
 import unicodedata
 from datetime import date, datetime, timedelta, timezone
 
-from utils import constants as C
+import constants as C
 from utils import db
 from utils.db import table
 from utils.routes import href

@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 from functools import lru_cache
 
-from utils import constants as C
+import constants as C
 
 
 @lru_cache(maxsize=1)
 def countries_data() -> list[dict]:
-    with open(C.BASE_DIR / "data" / "countries.json", encoding="utf-8") as fh:
+    with open(C.COUNTRIES_JSON, encoding="utf-8") as fh:
         return json.load(fh)
 
 
