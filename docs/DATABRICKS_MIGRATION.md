@@ -13,14 +13,14 @@ There is **no dedicated NoSQL database** (no MongoDB, Redis, DynamoDB, Firestore
 
 | Original (Next.js / FastAPI app) | Where | In this Dash app | What you do |
 |---|---|---|---|
-| **`jsonb` columns** – `batch_import_rows.raw`, `batch_import_rows.errors` (and `cmetadata` on the vector table) | Drizzle schema, LangChain PGVector | `STRING` columns holding JSON text (`json.dumps`). `cmetadata` is flattened into real columns of `policy_repo_document_chunks` (`record_id`, `country`, `lang_type`, `year`, …) | Nothing – `migrate_from_postgres.py` serialises them. Query with `from_json(raw, 'map<string,string>')` or `raw:Country` (Databricks JSON path syntax). |
-| **pgvector embeddings** – `langchain_pg_collection`, `langchain_pg_embedding` (`vector` column + `cmetadata jsonb`), `chunk_parents` (`jsonb metadata`) | Python RAG service | **`policy_repo_document_chunks`** – plain text chunks, retrieved with BM25 (SQLite FTS5 in memory). The mAI gateway exposes chat models only – no embedding endpoint – so vectors can't be produced. | Not copied. Run `python scripts/reindex.py --lang all` after migrating; it rebuilds the chunks from the stored documents. |
-| **Object storage** – Vercel Blob (`documents.blob_url`) | Document upload / download / RAG ingest | UC **Volume** `/Volumes/prd_mega/sgpbpi163/policy_repo_documents/<ISO3>/<document-id>-<file name>`; `policy_repo_documents.file_path` holds the key | `migrate_from_postgres.py` downloads each blob and writes it to the volume. |
+| **`jsonb` columns** – `batch_import_rows.raw`, `batch_import_rows.errors` (and `cmetadata` on the vector table) | Drizzle schema, LangChain PGVector | `STRING` columns holding JSON text (`json.dumps`). `cmetadata` is replaced by the fields of the JSON chunk files (`record_id`, `lang_type`, …) plus the record's own columns joined at load time | Nothing – `migrate_from_postgres.py` serialises them. Query with `from_json(raw, 'map<string,string>')` or `raw:Country` (Databricks JSON path syntax). |
+| **pgvector embeddings** – `langchain_pg_collection`, `langchain_pg_embedding` (`vector` column + `cmetadata jsonb`), `chunk_parents` (`jsonb metadata`) | Python RAG service | **JSON chunk files** in the volume (`…/upload-files/chunks/`, one per document) – plain text chunks, retrieved with BM25 (SQLite FTS5 in memory). The mAI gateway exposes chat models only – no embedding endpoint – so vectors can't be produced. | Not copied. Run `python scripts/reindex.py --lang all` after migrating; it rebuilds the chunks from the stored documents. |
+| **Object storage** – Vercel Blob (`documents.blob_url`) | Document upload / download / RAG ingest | UC **Volume** folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/pim-repositary/<ISO3>_<Country>/<National|Subnational_<entity>|Supranational>/<Year>/<Tier>/<ENG|ORI_<language>>/<id8>_<file name>`. The table keeps `blob_url` and has no path column: migrated documents are found through the repository's `_manifest.json` | `scripts/copy_documents_to_volume.py` downloads each `blob_url` into the local `files-to-transfer/` folder (same layout + manifest); its contents are uploaded by hand into the repository folder. The table is not changed. |
 | **Auth.js tables** – `accounts`, `sessions`, `verification_tokens` | Google OAuth | Not migrated. Sign-in is Posit Connect SSO (headers) or a local email + password account stored in `policy_repo_users`. | Users re-register once, or sign in through Connect. |
 
 Also in the original: in-process rate limiters (no Redis) → kept as in-process limiters here, so nothing to migrate.
 
-Pgvector → SQL, if you ever want it back: add an `embedding ARRAY<FLOAT>` column to `policy_repo_document_chunks` and use Databricks Vector Search (or `vector_search()`), fed by an embedding model served in your workspace. The mAI gateway can't provide one today.
+Pgvector, if you ever want it back: store the chunks in a Delta table with an `embedding ARRAY<FLOAT>` column (today they are JSON files in the volume, `…/upload-files/chunks/`) and use Databricks Vector Search (or `vector_search()`), fed by an embedding model served in your workspace. The mAI gateway can't provide one today.
 
 ---
 
@@ -30,7 +30,7 @@ Pgvector → SQL, if you ever want it back: add an `embedding ARRAY<FLOAT>` colu
 |---|---|---|
 | `countries` | `prd_mega.sgpbpi163.policy_repo_countries` | key `iso3`; `char(3)` → `STRING` (trimmed) |
 | `policy_records` | `prd_mega.sgpbpi163.policy_repo_policy_records` | key `id` (UUID kept as text) |
-| `documents` | `prd_mega.sgpbpi163.policy_repo_documents` | **`blob_url` → `file_path`** (path inside the volume) |
+| `documents` | `prd_mega.sgpbpi163.policy_repo_documents` | copied as is (`blob_url` kept); the file's repository path is listed in `_manifest.json` |
 | `users` | `prd_mega.sgpbpi163.policy_repo_users` | gains `created_at` |
 | `audit_logs` | `prd_mega.sgpbpi163.policy_repo_audit_logs` | |
 | `partner_api_keys` | `prd_mega.sgpbpi163.policy_repo_partner_api_keys` | only SHA-256 hashes are stored |
@@ -38,9 +38,9 @@ Pgvector → SQL, if you ever want it back: add an `embedding ARRAY<FLOAT>` colu
 | `batch_import_rows` | `prd_mega.sgpbpi163.policy_repo_batch_import_rows` | `raw`, `errors`: jsonb → JSON `STRING` |
 | `briefings_cache` | `prd_mega.sgpbpi163.policy_repo_briefings_cache` | |
 | `imf_pima_assessments` | `prd_mega.sgpbpi163.policy_repo_imf_pima_assessments` | |
-| `langchain_pg_collection`, `langchain_pg_embedding`, `chunk_parents` | `prd_mega.sgpbpi163.policy_repo_document_chunks` | **new shape, re-indexed – not copied** |
+| `langchain_pg_collection`, `langchain_pg_embedding`, `chunk_parents` | JSON files in `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/chunks/` (no table) | **new shape, re-indexed – not copied** |
 | `accounts`, `sessions`, `verification_tokens` | – | not migrated |
-| Vercel Blob | volume `prd_mega.sgpbpi163.policy_repo_documents` | |
+| Vercel Blob | volume folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/pim-repositary/` | `scripts/copy_documents_to_volume.py` → `files-to-transfer/` → manual upload |
 
 The prefix and the schema are set in `constants.py` (`TABLES`, `DATABRICKS_CATALOG`, `DATABRICKS_SCHEMA`). Credentials are **not** in the code – only the variable names; values come from Posit Connect environment variables (or `.env` locally).
 
@@ -67,9 +67,9 @@ The full DDL is in [`sql/uc_tables.sql`](../sql/uc_tables.sql) (generated from `
 2. **Grants** (run as a catalog/schema owner):
    ```sql
    GRANT USE CATALOG ON CATALOG prd_mega TO `<client-id>`;
-   GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE, CREATE VOLUME ON SCHEMA prd_mega.sgpbpi163 TO `<client-id>`;
-   -- after the volume exists:
-   GRANT READ VOLUME, WRITE VOLUME ON VOLUME prd_mega.sgpbpi163.policy_repo_documents TO `<client-id>`;
+   GRANT USE SCHEMA, SELECT, MODIFY ON SCHEMA prd_mega.sgpbpi163 TO `<client-id>`;
+   -- the existing volume that holds documents/ and chunks/:
+   GRANT READ VOLUME, WRITE VOLUME ON VOLUME prd_mega.sgpbpi163.vgpbpi163 TO `<client-id>`;
    ```
    The service principal also needs **CAN USE** on the SQL warehouse.
 3. **Create tables and volume** – either paste `sql/uc_tables.sql` into the SQL editor, or run
@@ -103,7 +103,7 @@ What the script does:
 * copies the 10 relational tables in dependency order (countries → records → documents → users → …), 50 rows per `INSERT`;
 * **idempotent** – rows whose key already exists are skipped, so an interrupted run can simply be repeated (`--tables documents` re-runs one table);
 * keeps all UUIDs (as strings), so links such as `/?page=record&id=<uuid>` keep working;
-* for every `documents` row it downloads `blob_url`, writes the file to the volume and stores the new path in `file_path` (`--skip-files` copies metadata only);
+* (files: superseded by `scripts/copy_documents_to_volume.py`, which downloads every `blob_url` into `files-to-transfer/` for a manual upload into the repository, without changing the table);
 * turns `jsonb` into JSON text, trims `char(3)` country codes, fills `users.created_at`;
 * prints `source / copied / present / failed / target` per table and exits non-zero when counts differ.
 
@@ -111,11 +111,11 @@ Credentials come from the environment only. Use a read-only Postgres role for th
 
 ### Alternative without Python (metadata tables only)
 
-Export each table with `psql`, upload the CSVs to `/Volumes/prd_mega/sgpbpi163/policy_repo_documents/_import/`, then load them with `COPY INTO`:
+Export each table with `psql`, upload the CSVs to `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/_import/`, then load them with `COPY INTO`:
 
 ```sql
 COPY INTO prd_mega.sgpbpi163.policy_repo_policy_records
-FROM '/Volumes/prd_mega/sgpbpi163/policy_repo_documents/_import/policy_records.csv'
+FROM '/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/_import/policy_records.csv'
 FILEFORMAT = CSV
 FORMAT_OPTIONS ('header' = 'true', 'multiLine' = 'true', 'escape' = '"');
 ```
@@ -129,16 +129,13 @@ Export with explicit casts so Spark can read the values: `SELECT …, machine_re
 ```sql
 SELECT 'countries' t, COUNT(*) n FROM prd_mega.sgpbpi163.policy_repo_countries
 UNION ALL SELECT 'policy_records', COUNT(*) FROM prd_mega.sgpbpi163.policy_repo_policy_records
-UNION ALL SELECT 'documents',      COUNT(*) FROM prd_mega.sgpbpi163.policy_repo_documents
-UNION ALL SELECT 'document_chunks',COUNT(*) FROM prd_mega.sgpbpi163.policy_repo_document_chunks;
+UNION ALL SELECT 'documents',      COUNT(*) FROM prd_mega.sgpbpi163.policy_repo_documents;
 
--- every document must have a file in the volume
-LIST '/Volumes/prd_mega/sgpbpi163/policy_repo_documents/';
+-- every document must be in the repository and in its _manifest.json (see _manifest.csv for the list)
+LIST '/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/pim-repositary/';
 
--- records without chunks after re-indexing (expected: only files without a text layer)
-SELECT r.id, r.name_eng FROM prd_mega.sgpbpi163.policy_repo_policy_records r
-LEFT JOIN (SELECT DISTINCT record_id FROM prd_mega.sgpbpi163.policy_repo_document_chunks) c ON c.record_id = r.id
-WHERE c.record_id IS NULL;
+-- the search index: one chunk file per indexed document (scanned files without a text layer have none)
+LIST '/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/chunks/';
 ```
 
 Then open the app: `/?page=statistics` shows the index size, `/?page=repository` the records.
@@ -150,7 +147,7 @@ Then open the app: `/?page=statistics` shows the index size, `/?page=repository`
 * **No enforced constraints.** Delta primary / foreign keys are informational. Uniqueness (user e-mail, API-key hash, one ENG + one ORI document per record) is checked by the app before writing (select-then-insert).
 * **No row locks.** The original used `FOR UPDATE SKIP LOCKED` to claim batch rows; here a batch runs in one background job guarded by an in-process lock. Run Connect with the default single process for this content, or accept that two simultaneous runs of the *same* batch aren't prevented.
 * **Latency.** A serverless / auto-stopping SQL warehouse needs a cold start on the first query. The app caches read-heavy lookups for `PIM_CACHE_SECONDS` (default 60 s).
-* **Housekeeping.** Run `OPTIMIZE prd_mega.sgpbpi163.policy_repo_document_chunks` occasionally after large re-indexes.
+* **Housekeeping.** `python scripts/cron_reconcile.py` removes chunk files of deleted documents and indexes documents that have none.
 * **Time zones.** Timestamps are stored as naive UTC (the source columns were `timestamp without time zone`).
 
 ---

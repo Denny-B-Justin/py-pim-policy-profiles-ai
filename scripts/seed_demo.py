@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import constants as C  # noqa: E402
-from utils import auth, db, documents, imf_pima, indexer, queries  # noqa: E402
+from utils import auth, db, documents, imf_pima, indexer, queries, storage  # noqa: E402
 from utils.db import table  # noqa: E402
 from utils.schema import all_ddl  # noqa: E402
 
@@ -145,8 +145,10 @@ def main() -> None:
             db.insert("countries", {"iso3": c["iso3"], "name": c["name"], "gdp_2024_bn": c["gdpBn"],
                                     "pub_inv_pct_gdp": c["pubInvPctGdp"], "pub_inv_2024_bn": c["pubInvBn"]})
     if args.reset:
-        for t in ("document_chunks", "documents", "policy_records", "briefings_cache"):
+        for t in ("documents", "policy_records", "briefings_cache"):
             db.execute(f"DELETE FROM {table(t)}")
+        for f in indexer.chunk_files():
+            storage.delete(f["name"], area=C.CHUNKS_DIR)
     if db.query(f"SELECT 1 FROM {table('policy_records')} LIMIT 1") and not args.reset:
         print("records already present – use --reset to rebuild")
     else:

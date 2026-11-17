@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Any
 
 import constants as C
-from utils import db
+from utils import db, storage
 from utils.db import table, to_bool, to_dt, to_int
 
 _REC_TS = ("created_at", "updated_at", "link_checked_at", "link_last_ok_at")
@@ -38,6 +38,9 @@ def _doc(r: dict) -> dict:
     out["uploaded_at"] = to_dt(out.get("uploaded_at"))
     out["text_layer"] = to_bool(out.get("text_layer"))
     out["file_size"] = to_int(out.get("file_size"))
+    # the table has no path column: the file is found through blob_url (app uploads) or the repository manifest;
+    # None = not in the repository yet
+    out["file_path"] = storage.document_path(out)
     return out
 
 
@@ -123,10 +126,9 @@ def set_link_status(record_id: str, link_ok: int | None, checked_at: datetime | 
 
 
 def delete_record(record_id: str) -> list[dict]:
-    """Delete a record + its documents + indexed chunks.  Returns the removed document rows
-    (so the caller can delete the files from storage)."""
+    """Delete a record + its documents.  Returns the removed document rows (so the caller can delete the
+    files and the search-index chunks from storage)."""
     docs = get_documents_for_record(record_id)
-    db.execute(f"DELETE FROM {table('document_chunks')} WHERE record_id = :id", {"id": record_id})
     db.execute(f"DELETE FROM {table('documents')} WHERE record_id = :id", {"id": record_id})
     db.delete("policy_records", record_id)
     db.invalidate("")
@@ -311,14 +313,14 @@ def get_records_with_docs_by_country(iso3: str) -> list[dict]:
 
 def get_country_docs_for_download(iso3: str, lang: str = "all") -> list[dict]:
     sql = (f"SELECT p.name_eng AS record_name, p.policy_guidance_tier AS tier, d.lang_type, d.lang_label, "
-           f"d.file_name, d.file_size, d.file_path FROM {table('documents')} d "
+           f"d.file_name, d.file_size, d.id, d.blob_url FROM {table('documents')} d "
            f"JOIN {table('policy_records')} p ON p.id = d.record_id WHERE p.country = :c")
     params = {"c": iso3}
     if lang in ("ENG", "ORI"):
         sql += " AND d.lang_type = :lt"
         params["lt"] = lang
     sql += " ORDER BY p.policy_guidance_tier ASC NULLS LAST, LOWER(p.name_eng) ASC"
-    return db.query(sql, params)
+    return [{**r, "file_path": storage.document_path(r)} for r in db.query(sql, params)]
 
 
 def export_all_records_with_docs() -> list[dict]:
@@ -348,26 +350,33 @@ def recompute_machine_readable(record_id: str) -> bool | None:
     return mr
 
 
-def upsert_document(record_id: str, lang_type: str, file_path: str, lang_code: str | None = None,
+def get_slot_document(record_id: str, lang_type: str) -> dict | None:
+    """The record's current ENG or ORI document (max one per slot)."""
+    rows = db.query(f"SELECT * FROM {table('documents')} WHERE record_id = :r AND lang_type = :t",
+                    {"r": record_id, "t": lang_type})
+    return _doc(rows[0]) if rows else None
+
+
+def upsert_document(doc_id: str, record_id: str, lang_type: str, key: str, lang_code: str | None = None,
                     lang_label: str | None = None, file_name: str | None = None, file_size: int | None = None,
                     translation_source: str | None = None, text_layer: bool | None = None) -> dict:
-    """Max one ENG + one ORI document per record (UC has no UNIQUE → select-then-write)."""
+    """Max one ENG + one ORI document per record (UC has no UNIQUE → select-then-write).  `doc_id` = the slot's
+    existing id (replacement) or a new one; the file must already be stored at `key` (in the repository)."""
     source = translation_source if lang_type == "ENG" else None
-    existing = db.query(f"SELECT id, file_path FROM {table('documents')} WHERE record_id = :r AND lang_type = :t",
-                        {"r": record_id, "t": lang_type})
-    values = dict(lang_code=lang_code, lang_label=lang_label, file_path=file_path, file_name=file_name,
+    existing = get_slot_document(record_id, lang_type)
+    if existing:
+        doc_id = existing["id"]
+    # `blob_url` (the old Vercel link column) records where the file now lives – document_path() reads it back
+    values = dict(lang_code=lang_code, lang_label=lang_label, blob_url=storage.location(key), file_name=file_name,
                   file_size=file_size, translation_source=source, text_layer=text_layer, uploaded_at=db.now())
     if existing:
-        doc_id = existing[0]["id"]
         db.update("documents", doc_id, values)
-        replaced = existing[0]["file_path"]
     else:
-        doc_id = db.uid()
         db.insert("documents", {"id": doc_id, "record_id": record_id, "lang_type": lang_type, **values})
-        replaced = None
     recompute_machine_readable(record_id)
     doc = _doc(db.query(f"SELECT * FROM {table('documents')} WHERE id = :i", {"i": doc_id})[0])
-    doc["_replaced_path"] = replaced if replaced and replaced != file_path else None
+    replaced = existing["file_path"] if existing else None
+    doc["_replaced_path"] = replaced if replaced and replaced != key else None
     return doc
 
 
@@ -393,7 +402,6 @@ def delete_document(doc_id: str) -> dict | None:
     doc = get_document(doc_id)
     if not doc:
         return None
-    db.execute(f"DELETE FROM {table('document_chunks')} WHERE document_id = :i", {"i": doc_id})
     db.delete("documents", doc_id)
     recompute_machine_readable(doc["record_id"])
     return doc

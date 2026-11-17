@@ -1,11 +1,12 @@
 """
-Rebuild the search index (policy_repo_document_chunks) from the stored documents.
+Rebuild the search index (the chunk files in <FILES_ROOT>/chunks/) from the stored documents.
 
     python scripts/reindex.py                 # English documents (clears the index first) – what the app's RAG admin page does
     python scripts/reindex.py --lang all      # English + original-language documents
     python scripts/reindex.py --lang ori      # append original-language documents (does not clear)
 
-Run it once after migrating data: the pgvector index of the old app is not copied (see docs/DATABRICKS_MIGRATION.md).
+Run it once after copying the documents into the volume (scripts/copy_documents_to_volume.py): the pgvector index
+of the old app is not copied (see docs/DATABRICKS_MIGRATION.md).
 """
 from __future__ import annotations
 

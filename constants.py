@@ -99,18 +99,36 @@ TABLES: dict[str, str] = {
     "documents": f"{TABLE_PREFIX}documents",                        # was  documents
     "users": f"{TABLE_PREFIX}users",                                # was  users
     "audit_logs": f"{TABLE_PREFIX}audit_logs",                      # was  audit_logs
-    "partner_api_keys": f"{TABLE_PREFIX}partner_api_keys",          # was  partner_api_keys
+    "partner_api_keys": f"{TABLE_PREFIX}partner_api_keys",          # was  partner_api_keys (not created yet)
     "batch_imports": f"{TABLE_PREFIX}batch_imports",                # was  batch_imports
     "batch_import_rows": f"{TABLE_PREFIX}batch_import_rows",        # was  batch_import_rows (jsonb -> STRING)
     "briefings_cache": f"{TABLE_PREFIX}briefings_cache",            # was  briefings_cache
     "imf_pima_assessments": f"{TABLE_PREFIX}imf_pima_assessments",  # was  imf_pima_assessments
-    "document_chunks": f"{TABLE_PREFIX}document_chunks",            # was  langchain_pg_embedding + chunk_parents (pgvector)
 }
+# The search index (chunks) is not a table: it is stored as files in the volume (CHUNKS_DIR).
 
-# Unity Catalog Volume that replaces Vercel Blob (policy PDFs / DOCX files).
-UC_VOLUME = _env("DATABRICKS_VOLUME", f"{TABLE_PREFIX}documents")
+# Partner API (/api/v1/*) needs the partner_api_keys table, which does not exist yet → off by default.
+PARTNER_API_ENABLED = _env("PIM_PARTNER_API", "0") in ("1", "true", "True")
+
+# Unity Catalog Volume + folder holding the app's files (replaces Vercel Blob):
+#   <FILES_ROOT>/documents/pim-repositary/        the policy document repository (PDF / DOCX / TXT):
+#       <ISO3>_<Country>/<National|Subnational_<entity>|Supranational>/<Year>/<Tier>/<ENG|ORI_<language>>/
+#       <id8>_<file name>   +  _manifest.json  (document id → path; written by scripts/copy_documents_to_volume.py)
+#   <FILES_ROOT>/chunks/<record-id>__<ENG|ORI>__<document-id>.json  search-index chunks, one file per document
+UC_VOLUME = _env("DATABRICKS_VOLUME", "vgpbpi163")
 UC_VOLUME_ROOT = f"/Volumes/{DATABRICKS_CATALOG}/{DATABRICKS_SCHEMA}/{UC_VOLUME}"
-# Local folder used instead of the volume when PIM_DB_BACKEND=sqlite
+FILES_FOLDER = _env("PIM_FILES_FOLDER", "PIMPAM-AI/policy-profiles/upload-files").strip("/")
+FILES_ROOT = f"{UC_VOLUME_ROOT}/{FILES_FOLDER}"
+DOCUMENTS_DIR = _env("PIM_DOCUMENTS_FOLDER", "documents/pim-repositary").strip("/")
+CHUNKS_DIR = "chunks"
+# Index of the repository: {document id: path relative to DOCUMENTS_DIR}.  Documents uploaded through the app
+# instead record their full path in the documents row (`blob_url`).
+DOCUMENT_MANIFEST = "_manifest.json"
+DOCUMENT_MANIFEST_SECONDS = 300               # how long a process keeps the manifest before re-reading it
+# Local staging folder of scripts/copy_documents_to_volume.py – its contents are uploaded by hand into
+# <FILES_ROOT>/<DOCUMENTS_DIR>/.  Never deployed or committed (.gitignore).
+TRANSFER_DIR = Path(_env("PIM_TRANSFER_DIR", str(BASE_DIR / "files-to-transfer")))
+# Local folder used instead of the volume when PIM_DB_BACKEND=sqlite (same documents/ + chunks/ layout)
 LOCAL_STORAGE_DIR = Path(_env("PIM_LOCAL_STORAGE", str(BASE_DIR / ".local" / "files")))
 
 # Bundled files
@@ -387,7 +405,7 @@ EXTRACT_MAX_DETECT_BYTES = 40 * 1024 * 1024
 # Search index + retrieval
 CHUNK_SIZE = 1000
 CHUNK_PARENT_CHARS = max(CHUNK_SIZE * 2, 1800)   # 2000
-INDEX_BATCH = 20
+INDEX_LOAD_WORKERS = 16                       # parallel downloads of chunk files when the search index loads
 RETRIEVER_K = 6
 BRIEFING_RETRIEVER_K = 20
 MAX_CONTEXT_TOKENS = 6000

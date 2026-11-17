@@ -13,8 +13,11 @@
 
 -- Permissions the app's service principal needs (replace <client-id> with DATABRICKS_CLIENT_ID):
 --   GRANT USE CATALOG ON CATALOG prd_mega TO `<client-id>`;
---   GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE, CREATE VOLUME ON SCHEMA prd_mega.sgpbpi163 TO `<client-id>`;
---   GRANT READ VOLUME, WRITE VOLUME ON VOLUME prd_mega.sgpbpi163.policy_repo_documents TO `<client-id>`;   -- after the volume exists
+--   GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE ON SCHEMA prd_mega.sgpbpi163 TO `<client-id>`;
+--   GRANT READ VOLUME, WRITE VOLUME ON VOLUME prd_mega.sgpbpi163.vgpbpi163 TO `<client-id>`;
+--
+-- Files are not in tables: documents and the search-index chunks live in the existing volume folder
+--   /Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/pim-repositary/   (document repository)   and   /Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/chunks/
 
 -- policy_repo_countries  ←  Postgres `countries`
 CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_countries (
@@ -70,7 +73,7 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_documents (
   lang_label STRING,
   translation_source STRING,
   text_layer BOOLEAN,
-  file_path STRING NOT NULL,
+  blob_url STRING,
   file_name STRING,
   file_size INT,
   uploaded_at TIMESTAMP NOT NULL,
@@ -78,7 +81,7 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_documents (
   CONSTRAINT fk_policy_repo_documents_record_id FOREIGN KEY (record_id) REFERENCES prd_mega.sgpbpi163.policy_repo_policy_records(id)
 )
 USING DELTA
-COMMENT 'Attached files (max 1 ENG + 1 ORI per record). file_path points into the UC Volume.';
+COMMENT 'Attached files (max 1 ENG + 1 ORI per record). The file lives in the volume repository (path via its _manifest.json or blob_url).';
 
 -- policy_repo_users  ←  Postgres `users`
 CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_users (
@@ -205,34 +208,3 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_imf_pima_assessments (
 )
 USING DELTA
 COMMENT 'IMF PIMA / C-PIMA assessments (portal + curated references).';
-
--- policy_repo_document_chunks  ←  NEW (replaces langchain_pg_collection / langchain_pg_embedding / chunk_parents)
-CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_document_chunks (
-  id STRING NOT NULL,
-  record_id STRING NOT NULL,
-  document_id STRING,
-  country STRING NOT NULL,
-  country_name STRING,
-  name_eng STRING,
-  name_orig STRING,
-  year SMALLINT,
-  source STRING,
-  policy_guidance_tier SMALLINT,
-  strategy_tier SMALLINT,
-  lang_type STRING,
-  lang_code STRING,
-  record_status STRING NOT NULL,
-  section_heading STRING,
-  page INT,
-  chunk_index INT NOT NULL,
-  content STRING NOT NULL,
-  created_at TIMESTAMP NOT NULL,
-  CONSTRAINT pk_policy_repo_document_chunks PRIMARY KEY (id),
-  CONSTRAINT fk_policy_repo_document_chunks_record_id FOREIGN KEY (record_id) REFERENCES prd_mega.sgpbpi163.policy_repo_policy_records(id)
-)
-USING DELTA
-COMMENT 'RAG text index: one row per ~2000-char section-aware chunk (replaces pgvector tables).';
-
--- Files (replaces Vercel Blob).  Layout inside the volume:  <ISO3>/<document-id>-<safe file name>
-CREATE VOLUME IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_documents
-COMMENT 'Policy documents (PDF / DOCX / TXT) – replaces Vercel Blob';

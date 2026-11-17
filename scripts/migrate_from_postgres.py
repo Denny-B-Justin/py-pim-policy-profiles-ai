@@ -9,7 +9,7 @@ One-off migration:  Neon / PostgreSQL (the Next.js app's database)  →  Azure D
     python scripts/create_tables.py                     # 1. create the policy_repo_* Delta tables + (see docs) the volume
     python scripts/migrate_from_postgres.py --dry-run   # 2. row counts only
     python scripts/migrate_from_postgres.py             # 3. copy everything (idempotent – rows already present are skipped)
-    python scripts/reindex.py --lang all                 # 4. rebuild the search index (policy_repo_document_chunks) from the files
+    python scripts/reindex.py --lang all                 # 4. rebuild the search index (chunk files in the volume) from the documents
 
 What is copied (source table → UC table)
     countries            → policy_repo_countries            policy_records       → policy_repo_policy_records
@@ -21,7 +21,7 @@ What is copied (source table → UC table)
 
 What is NOT copied (and why – see docs/DATABRICKS_MIGRATION.md)
     langchain_pg_collection / langchain_pg_embedding / chunk_parents   pgvector index – the mAI gateway has no embedding
-                                                                        endpoint; retrieval is BM25 over policy_repo_document_chunks,
+                                                                        endpoint; retrieval is BM25 over chunk files in the volume,
                                                                         which `scripts/reindex.py` rebuilds from the documents.
     accounts / sessions / verification_tokens                          Auth.js (Google OAuth) tables – replaced by Posit Connect
                                                                         sign-in or the local policy_repo_users accounts.
@@ -211,7 +211,7 @@ def main() -> int:
     with psycopg.connect(args.source_url) as conn:
         report = migrate(conn, tables, args.dry_run, args.skip_files)
     if not args.dry_run:
-        print("\nNext: python scripts/reindex.py --lang all   (rebuilds policy_repo_document_chunks – the pgvector index is not migrated)")
+        print("\nNext: python scripts/reindex.py --lang all   (rebuilds the chunk files – the pgvector index is not migrated)")
         bad = [t for t, r in report.items() if r["target"] != r["source"] or r["failed"]]
         if bad:
             print("Check:", ", ".join(bad))

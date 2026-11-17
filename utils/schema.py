@@ -59,7 +59,7 @@ SCHEMA: dict[str, dict] = {
         "fks": [("country", "countries", "iso3")],
     },
     "documents": {
-        "comment": "Attached files (max 1 ENG + 1 ORI per record). file_path points into the UC Volume.",
+        "comment": "Attached files (max 1 ENG + 1 ORI per record). The file lives in the volume repository (path via its _manifest.json or blob_url).",
         "cols": [
             ("id", "STRING NOT NULL"),
             ("record_id", "STRING NOT NULL"),
@@ -68,7 +68,7 @@ SCHEMA: dict[str, dict] = {
             ("lang_label", "STRING"),
             ("translation_source", "STRING"),
             ("text_layer", "BOOLEAN"),
-            ("file_path", "STRING NOT NULL"),            # replaces Vercel Blob `blob_url`
+            ("blob_url", "STRING"),                      # old Vercel Blob link (migrated rows) / volume path (new uploads) – informational
             ("file_name", "STRING"),
             ("file_size", "INT"),
             ("uploaded_at", "TIMESTAMP NOT NULL"),
@@ -195,32 +195,6 @@ SCHEMA: dict[str, dict] = {
         "pk": ["id"],
         "fks": [("iso3", "countries", "iso3")],
     },
-    "document_chunks": {
-        "comment": "RAG text index: one row per ~2000-char section-aware chunk (replaces pgvector tables).",
-        "cols": [
-            ("id", "STRING NOT NULL"),
-            ("record_id", "STRING NOT NULL"),
-            ("document_id", "STRING"),
-            ("country", "STRING NOT NULL"),
-            ("country_name", "STRING"),
-            ("name_eng", "STRING"),
-            ("name_orig", "STRING"),
-            ("year", "SMALLINT"),
-            ("source", "STRING"),
-            ("policy_guidance_tier", "SMALLINT"),
-            ("strategy_tier", "SMALLINT"),
-            ("lang_type", "STRING"),
-            ("lang_code", "STRING"),
-            ("record_status", "STRING NOT NULL"),
-            ("section_heading", "STRING"),
-            ("page", "INT"),
-            ("chunk_index", "INT NOT NULL"),
-            ("content", "STRING NOT NULL"),
-            ("created_at", "TIMESTAMP NOT NULL"),
-        ],
-        "pk": ["id"],
-        "fks": [("record_id", "policy_records", "id")],
-    },
 }
 
 _SQLITE_TYPES = {"STRING": "TEXT", "DECIMAL(12,3)": "NUMERIC", "DECIMAL(6,4)": "NUMERIC", "TIMESTAMP": "TEXT", "DATE": "TEXT"}
@@ -261,7 +235,7 @@ def ddl(logical: str, dialect: str = "databricks") -> str:
 
 CREATE_ORDER = [
     "countries", "policy_records", "documents", "users", "audit_logs", "partner_api_keys",
-    "batch_imports", "batch_import_rows", "briefings_cache", "imf_pima_assessments", "document_chunks",
+    "batch_imports", "batch_import_rows", "briefings_cache", "imf_pima_assessments",
 ]
 
 

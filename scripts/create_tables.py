@@ -1,7 +1,10 @@
 """
 Create the Unity Catalog tables (Delta) for the app.
 
-    python scripts/create_tables.py            # creates the prd_mega.sgpbpi163.policy_repo_* tables + the policy_repo_documents volume (needs DATABRICKS_* env vars)
+    python scripts/create_tables.py            # creates the prd_mega.sgpbpi163.policy_repo_* tables (needs DATABRICKS_* env vars)
+
+Files (documents + search-index chunks) live in an existing volume folder (constants.FILES_ROOT), which is
+not created here.
     python scripts/create_tables.py --print    # just print the DDL
     PIM_DB_BACKEND=sqlite python scripts/create_tables.py   # local demo database
 
@@ -26,9 +29,6 @@ def main() -> None:
     args = ap.parse_args()
     dialect = "sqlite" if C.DB_BACKEND == "sqlite" else "databricks"
     statements = all_ddl(dialect)
-    if dialect == "databricks":
-        statements.append(f"CREATE VOLUME IF NOT EXISTS {C.DATABRICKS_CATALOG}.{C.DATABRICKS_SCHEMA}.{C.UC_VOLUME} "
-                          "COMMENT 'Policy documents (PDF / DOCX / TXT) – replaces Vercel Blob'")
     if args.print:
         print(";\n\n".join(statements) + ";")
         return

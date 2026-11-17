@@ -82,8 +82,10 @@ def register_callbacks(app) -> None:
         try:
             rec = queries.get_record_with_docs(record_id)
             ori = next((d for d in (rec or {}).get("documents", []) if d["lang_type"] == "ORI"), None)
-            if not ori or not ori.get("file_path"):
+            if not ori:
                 raise ValueError("This record has no original-language document to translate.")
+            if not ori.get("file_path"):
+                raise ValueError(storage.NOT_IN_REPOSITORY)
             chars = translate.estimate_characters(storage.read(ori["file_path"]), ori.get("file_name"))
             body = html.Span(["Estimated total translation length: ", html.Strong(f"{chars:,} characters"), "."])
             if not mai_client.is_configured():

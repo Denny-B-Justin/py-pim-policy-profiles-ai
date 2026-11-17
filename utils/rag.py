@@ -2,8 +2,9 @@
 Retrieval for the AI Coach and the country briefings.
 
 The original service searched a pgvector index with OpenAI embeddings.  The Posit mAI gateway exposes
-no embedding endpoint, so retrieval is **lexical BM25** over the chunk table `policy_repo_document_chunks`
-(see docs/DATABRICKS_MIGRATION.md).  The chunk rows are loaded into a process-local, in-memory
+no embedding endpoint, so retrieval is **lexical BM25** over the chunk files in the volume (`chunks/`, one JSON
+file per document – utils/indexer.py), joined with the records' descriptive fields (country, names, year, tiers,
+status) from the records table.  The chunk rows are loaded into a process-local, in-memory
 SQLite **FTS5** index (Porter stemming + unicode folding, built-in `bm25()` ranking); if FTS5 is not
 compiled into the host's SQLite, a pure-Python BM25 over the filtered candidates is used instead.
 
@@ -21,7 +22,8 @@ import re
 import sqlite3
 import threading
 import time
-from collections import Counter
+from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
 from typing import Any
 
@@ -61,10 +63,18 @@ def _fts5_available() -> bool:
 
 
 # ── index lifecycle ──────────────────────────────────────────────────────────
+_REC_COLS = ("id", "country", "name_eng", "name_orig", "year", "source", "policy_guidance_tier", "strategy_tier",
+             "record_status")
+_files: dict[str, tuple[tuple, dict]] = {}   # chunk file name → ((modified, size), parsed payload)
+
+
 def _db_version() -> tuple:
-    r = db.query(f"SELECT COUNT(*) AS n, MAX(created_at) AS m, "
-                 f"SUM(CASE WHEN record_status = 'archived' THEN 1 ELSE 0 END) AS a FROM {table('document_chunks')}")[0]
-    return (int(r["n"] or 0), str(r["m"]), int(r["a"] or 0))
+    """Changes when a chunk file is written / deleted or a record is edited (record fields are joined in)."""
+    from utils import indexer  # noqa: PLC0415 - indexer imports this module
+
+    files = tuple(sorted((f["name"], f["modified"], f["size"]) for f in indexer.chunk_files()))
+    r = db.query(f"SELECT COUNT(*) AS n, MAX(updated_at) AS m FROM {table('policy_records')}")[0]
+    return (len(files), hash(files), int(r["n"] or 0), str(r["m"]))
 
 
 def invalidate() -> None:
@@ -73,8 +83,53 @@ def invalidate() -> None:
     _detail_cache.update(data=None, expires=0.0)
 
 
+def _read_chunk_file(name: str) -> dict | None:
+    from utils import indexer  # noqa: PLC0415
+
+    try:
+        return indexer.read_chunk_file(name)
+    except Exception:  # noqa: BLE001 - one unreadable file must not take the whole index down
+        log.warning("search index: could not read %s", name, exc_info=True)
+        return None
+
+
 def _load_rows() -> list[dict]:
-    return db.query(f"SELECT {', '.join(_COLS)} FROM {table('document_chunks')}")
+    """Chunk files (only new / changed ones are downloaded) + the records' fields → one row per chunk."""
+    from utils import indexer, queries  # noqa: PLC0415
+
+    files = indexer.chunk_files()
+    stale = [f for f in files if _files.get(f["name"], ((None,), None))[0] != (f["modified"], f["size"])]
+    if stale:
+        with ThreadPoolExecutor(max_workers=C.INDEX_LOAD_WORKERS) as pool:
+            for f, payload in zip(stale, pool.map(lambda x: _read_chunk_file(x["name"]), stale)):
+                if payload is not None:
+                    _files[f["name"]] = ((f["modified"], f["size"]), payload)
+    live = {f["name"] for f in files}
+    for name in [n for n in _files if n not in live]:
+        del _files[name]
+
+    recs = {r["id"]: r for r in db.query(f"SELECT {', '.join(_REC_COLS)} FROM {table('policy_records')}")}
+    names = queries.country_name_map()
+    rows = []
+    for name in sorted(_files):
+        payload = _files[name][1]
+        rec = recs.get(payload.get("record_id"))
+        if not rec:                         # orphan file (record deleted) – reconcile() removes it
+            continue
+        for c in payload.get("chunks") or []:
+            rows.append({
+                "id": f"{payload['document_id']}:{c.get('chunk_index')}", "record_id": rec["id"],
+                "document_id": payload["document_id"], "country": rec["country"],
+                "country_name": names.get(rec["country"], rec["country"]), "name_eng": rec["name_eng"],
+                "name_orig": rec["name_orig"], "year": db.to_int(rec["year"]), "source": rec["source"],
+                "policy_guidance_tier": db.to_int(rec["policy_guidance_tier"]),
+                "strategy_tier": db.to_int(rec["strategy_tier"]), "lang_type": payload.get("lang_type"),
+                "lang_code": payload.get("lang_code"), "record_status": rec["record_status"] or "latest",
+                "section_heading": c.get("section_heading"), "page": c.get("page"),
+                "chunk_index": c.get("chunk_index"), "content": c.get("content") or "",
+                "created_at": payload.get("created_at"),
+            })
+    return rows
 
 
 def _build(rows: list[dict], use_fts: bool):
@@ -325,48 +380,54 @@ _detail_cache: dict = {"data": None, "expires": 0.0}
 
 
 def stats_detail(force: bool = False) -> dict:
-    """Aggregates for the Statistics page, computed with plain SQL so they work on UC tables and SQLite alike."""
+    """Aggregates for the Statistics page, computed from the loaded search index (chunk files + records)."""
     now = time.monotonic()
     if not force and _detail_cache["data"] is not None and now < _detail_cache["expires"]:
         return _detail_cache["data"]
-    from utils import queries  # local import: queries imports rag lazily elsewhere
+    from utils import queries, storage  # noqa: PLC0415 - queries imports rag lazily elsewhere
 
-    chunks = table("document_chunks")
-    head = db.query(f"SELECT COUNT(*) AS n, COUNT(DISTINCT record_id) AS d, MAX(created_at) AS m FROM {chunks}")[0]
-    langs = {r["lang_type"]: int(r["d"] or 0) for r in
-             db.query(f"SELECT lang_type, COUNT(DISTINCT record_id) AS d FROM {chunks} GROUP BY lang_type")}
-    tok = db.query(f"SELECT SUM(tokens) AS t FROM {table('policy_records')} "
-                   f"WHERE id IN (SELECT DISTINCT record_id FROM {chunks})")[0]["t"]
+    _ensure()
+    rows = _state["rows"] or []
+    records: set = set()
+    langs: dict[str, set] = defaultdict(set)
+    country_docs: dict[str, set] = defaultdict(set)
+    country_chunks: Counter = Counter()
+    tier_docs: dict[int, set] = defaultdict(set)
+    year_docs: dict[int, set] = defaultdict(set)
+    last = None
+    for r in rows:
+        rid = r["record_id"]
+        records.add(rid)
+        langs[r["lang_type"]].add(rid)
+        country_docs[r["country"]].add(rid)
+        country_chunks[r["country"]] += 1
+        if r["policy_guidance_tier"] is not None:
+            tier_docs[r["policy_guidance_tier"]].add(rid)
+        if r["year"] is not None:
+            year_docs[r["year"]].add(rid)
+        if r.get("created_at") and (last is None or str(r["created_at"]) > last):
+            last = str(r["created_at"])
+    tok = sum(db.to_int(t["tokens"]) or 0 for t in db.query(f"SELECT id, tokens FROM {table('policy_records')}")
+              if t["id"] in records)
     names = queries.country_name_map()
-    by_country = [
-        {"country": r["country"] or "Unknown", "country_name": r["country_name"] or names.get(r["country"]),
-         "documents": int(r["d"] or 0), "chunks": int(r["n"] or 0)}
-        for r in db.query(f"SELECT country, MAX(country_name) AS country_name, COUNT(DISTINCT record_id) AS d, "
-                          f"COUNT(*) AS n FROM {chunks} GROUP BY country")]
+    by_country = [{"country": c or "Unknown", "country_name": names.get(c), "documents": len(d),
+                   "chunks": country_chunks[c]} for c, d in country_docs.items()]
     by_country.sort(key=lambda x: (-x["documents"], x["country"]))
-    by_tier = []
-    for r in db.query(f"SELECT policy_guidance_tier AS t, COUNT(DISTINCT record_id) AS d FROM {chunks} "
-                      f"WHERE policy_guidance_tier IS NOT NULL GROUP BY policy_guidance_tier"):
-        t = int(r["t"])
-        by_tier.append({"tier": t, "label": _TIER_LABELS.get(t, f"Tier {t}"), "documents": int(r["d"] or 0)})
-    by_tier.sort(key=lambda x: x["tier"])
-    by_year = [{"year": str(int(r["y"])), "documents": int(r["d"] or 0)} for r in
-               db.query(f"SELECT year AS y, COUNT(DISTINCT record_id) AS d FROM {chunks} "
-                        f"WHERE year IS NOT NULL GROUP BY year")]
-    by_year.sort(key=lambda x: x["year"])
-    last = head["m"]
+    by_tier = [{"tier": t, "label": _TIER_LABELS.get(t, f"Tier {t}"), "documents": len(d)}
+               for t, d in sorted(tier_docs.items())]
+    by_year = [{"year": str(y), "documents": len(d)} for y, d in sorted(year_docs.items())]
     data = {
         "summary": {
-            "total_chunks": int(head["n"] or 0),
-            "total_documents": int(head["d"] or 0),
-            "total_tokens": int(tok) if tok else None,
-            "lang_eng_documents": langs.get("ENG", 0),
-            "lang_ori_documents": langs.get("ORI", 0),
-            "last_updated": str(last)[:10] if last else None,
-            "collection_name": table("document_chunks"),
+            "total_chunks": len(rows),
+            "total_documents": len(records),
+            "total_tokens": tok or None,
+            "lang_eng_documents": len(langs.get("ENG", ())),
+            "lang_ori_documents": len(langs.get("ORI", ())),
+            "last_updated": last[:10] if last else None,
+            "collection_name": storage.location("", C.CHUNKS_DIR),
         },
         "by_country": by_country, "by_tier": by_tier, "by_year": by_year,
-        "vector_store": "SQLite" if C.DB_BACKEND == "sqlite" else "Unity Catalog (Delta)",
+        "vector_store": "Local folder (JSON files)" if C.DB_BACKEND == "sqlite" else "Unity Catalog volume (JSON files)",
         "search_engine": "BM25 · SQLite FTS5" if _fts5_available() else "BM25 · in-process",
         "chunk_size": C.CHUNK_PARENT_CHARS, "chunk_overlap": 0,
         "retriever_type": "bm25 · parent-sections",
