@@ -105,7 +105,7 @@
       "checksum": "bf471a4ce2a48c82b574e933666c984f"
     },
     "data/release_notes.json": {
-      "checksum": "85ed4a037d16d500531981cf3e0a9d36"
+      "checksum": "76c91ecc091ef025fd83157033c1bdd2"
     },
     "fonts/DejaVuSans-Bold.ttf": {
       "checksum": "132839e7a052c2bc6771b6818aad85bd"
@@ -132,7 +132,7 @@
       "checksum": "0f6db49d326cc927bdfc4aa47e7df646"
     },
     "pages/api_docs.py": {
-      "checksum": "c3dffae0abcf59b8a6cf20f37d6d312b"
+      "checksum": "ac11b71716222647cfa8cc15bc1c0245"
     },
     "pages/batch_upload.py": {
       "checksum": "52a0d0d8210dc1f2fbefadea1a09647b"
