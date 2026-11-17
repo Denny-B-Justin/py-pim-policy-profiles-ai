@@ -345,7 +345,7 @@ def _summarise(iso3: str, rows: list[dict]) -> dict:
     first = pimas[0] if pimas else None
     repeat = pimas[-1] if len(pimas) > 1 else None
     cpima = next((v for v in reversed(views) if v["assessment_type"] == "C-PIMA"), None)
-    fetched = max((db.to_dt(r["fetched_at"]) for r in rows if r.get("fetched_at")), default=None)
+    fetched = max(filter(None, (db.to_dt(r.get("fetched_at")) for r in rows)), default=None)
     g = lambda v, k: v[k] if v else None  # noqa: E731
     return {
         "iso3": iso3, "source_url": rows[0]["source_url"] if rows else "",

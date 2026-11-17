@@ -13,6 +13,7 @@ All SQL in this project is written in the common subset of both dialects
 from __future__ import annotations
 
 import logging
+import re
 import sqlite3
 import threading
 import time
@@ -221,13 +222,19 @@ def timed(label: str):
 
 
 # ── value coercion shared by the query layer ─────────────────────────────────
+_FRACTION = re.compile(r"\.(\d+)")
+
+
 def to_dt(v: Any) -> datetime | None:
     if v is None or v == "":
         return None
     if isinstance(v, datetime):
         return v.replace(tzinfo=None)
+    # Databricks returns timestamps as strings with trailing zeros trimmed ("05:00:41.14"), but Python 3.10's
+    # fromisoformat only accepts 3- or 6-digit fractions → pad / cut the fraction to 6 digits.
+    s = _FRACTION.sub(lambda m: "." + m.group(1)[:6].ljust(6, "0"), str(v).strip().replace("Z", ""), count=1)
     try:
-        return datetime.fromisoformat(str(v).replace("Z", ""))
+        return datetime.fromisoformat(s).replace(tzinfo=None)
     except ValueError:
         return None
 
