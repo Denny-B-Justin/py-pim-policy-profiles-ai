@@ -1,8 +1,9 @@
 /*
  * Global map – port of `web/app/map/MapClient.tsx` (Leaflet + Natural Earth country polygons).
  * Loaded on demand by pages/map_page.py (this file is excluded from Dash's auto-include via `assets_ignore`).
- * Exposes window.pimMap.init(elementId, countries), `countries` being the camelCase list built in Python:
+ * Exposes window.pimMap.init(elementId, countries, tiles), `countries` being the camelCase list built in Python:
  *   [{iso3, name, records, engDocs, oriDocs, originalLanguage, status: "english" | "nonEnglish"}]
+ * and `tiles` the base-map settings {url, attribution, maxZoom} (pages_constants.MAP_TILES – OpenStreetMap).
  */
 (function () {
   "use strict";
@@ -19,6 +20,13 @@
   var STATUS_LABEL = { english: "Original language: English", nonEnglish: "Original language: not English" };
   var NO_DATA_FILL = "#e8edf2";
   var DARK_FILL = { english: true };   // white country labels on this fill
+  // Translucent fills so the OpenStreetMap base map stays visible underneath.
+  var FILL_OPACITY = 0.7, NO_DATA_OPACITY = 0.3, HOVER_OPACITY = 0.85;
+  var DEFAULT_TILES = {
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 10
+  };
 
   var SMALL_LABEL_ISO = toSet(["XKX", "MNE", "MKD", "ALB", "BIH", "SRB", "ARM", "AZE", "GEO", "HRV", "MDA", "LUX", "IRL", "LTU"]);
   var CLUSTER_ISO = toSet(["XKX", "MNE", "MKD", "ALB", "BIH", "SRB", "HRV", "ARM", "AZE", "GEO", "MDA"]);
@@ -73,8 +81,9 @@
     if (el) el.style.display = "none";
   }
 
-  function init(elId, countries) {
+  function init(elId, countries, tiles) {
     var L = window.L;
+    tiles = tiles || DEFAULT_TILES;
     var el = document.getElementById(elId);
     if (!L || !el) return;
     if (current) { try { current.remove(); } catch (e) { /* element already gone */ } current = null; }
@@ -88,12 +97,13 @@
     var dataByIso = {};
     countries.forEach(function (c) { dataByIso[c.iso3] = c; });
 
-    var map = L.map(el, { worldCopyJump: true, minZoom: 2, maxZoom: 7, attributionControl: true }).setView([22, 20], 2);
+    var maxZoom = tiles.maxZoom || DEFAULT_TILES.maxZoom;
+    var map = L.map(el, { worldCopyJump: true, minZoom: 2, maxZoom: maxZoom, attributionControl: true }).setView([22, 20], 2);
     current = map;
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd", maxZoom: 19
+    L.tileLayer(tiles.url || DEFAULT_TILES.url, {
+      attribution: tiles.attribution || DEFAULT_TILES.attribution,
+      maxZoom: maxZoom
     }).addTo(map);
 
     var clusterLabels = [];
@@ -150,8 +160,8 @@
       var layer = L.geoJSON(geo, {
         style: function (feature) {
           var d = feature ? dataByIso[resolveIso(feature.properties || {}) || ""] : null;
-          if (!d) return { fillColor: NO_DATA_FILL, color: "#c5cdd6", weight: 0.35, fillOpacity: 0.55 };
-          return { fillColor: COLORS[d.status], color: "#fff", weight: 1.1, fillOpacity: 0.95 };
+          if (!d) return { fillColor: NO_DATA_FILL, color: "#c5cdd6", weight: 0.35, fillOpacity: NO_DATA_OPACITY };
+          return { fillColor: COLORS[d.status], color: "#fff", weight: 1.1, fillOpacity: FILL_OPACITY };
         },
         onEachFeature: function (feature, lyr) {
           var iso = resolveIso(feature.properties || {});
@@ -174,7 +184,7 @@
               '" style="display:inline-block;margin-top:8px;font-size:12px;color:#374291;font-weight:600">View country profile →</a>' +
             "</div>");
           lyr.on({
-            mouseover: function (e) { e.target.setStyle({ weight: 2.4, color: "#0c2a47", fillOpacity: 1 }); },
+            mouseover: function (e) { e.target.setStyle({ weight: 2.4, color: "#0c2a47", fillOpacity: HOVER_OPACITY }); },
             mouseout: function (e) { layer.resetStyle(e.target); }
           });
 

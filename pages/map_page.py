@@ -7,13 +7,14 @@ the title card, the legend and the “Loading map…” pill.
 
 from __future__ import annotations
 
-from dash import Input, Output, dcc, html
+from dash import Input, Output, State, dcc, html
 
 from pages.pages_constants import (
     MAP_TITLE as TITLE,
     MAP_COLORS as COLORS,
     MAP_NO_DATA_FILL as NO_DATA_FILL,
     MAP_LEGEND as LEGEND,
+    MAP_TILES as TILES,
 )
 from utils import queries
 
@@ -51,6 +52,7 @@ def layout(params=None):
                      id="map-loading",
                      className="pointer-events-none absolute inset-0 z-[1000] flex items-center justify-center"),
             dcc.Store(id="map-data", data=countries),
+            dcc.Store(id="map-tiles", data=TILES),
             dcc.Store(id="map-noop"),
         ], className="relative h-full w-full", role="region", **{"aria-label": "Global map of countries with PIM policy data"}),
         className="relative w-full", style={"height": "calc(100dvh - 8rem)", "minHeight": "520px"},
@@ -60,7 +62,7 @@ def layout(params=None):
 def register_callbacks(app):
     # Leaflet + map.js are vendored and loaded on demand, then the map is drawn into #map-root.
     app.clientside_callback(
-        """function(data){
+        """function(data, tiles){
             if (!data || !window.pim) { return window.dash_clientside.no_update; }
             var P = window.pim, b = P.basePath();
             Promise.all([P.loadCss(b + "assets/vendor/leaflet/leaflet.css"),
@@ -68,7 +70,7 @@ def register_callbacks(app):
               .then(function(){ return P.loadScript(b + "assets/map.js"); })
               .then(function(){
                   (function go(n){
-                      if (document.getElementById("map-root")) { window.pimMap.init("map-root", data); }
+                      if (document.getElementById("map-root")) { window.pimMap.init("map-root", data, tiles); }
                       else if (n > 0) { setTimeout(function(){ go(n - 1); }, 50); }
                   })(20);
               })
@@ -78,5 +80,5 @@ def register_callbacks(app):
               });
             return window.dash_clientside.no_update;
         }""",
-        Output("map-noop", "data"), Input("map-data", "data"),
+        Output("map-noop", "data"), Input("map-data", "data"), State("map-tiles", "data"),
     )

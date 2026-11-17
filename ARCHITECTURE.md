@@ -481,7 +481,7 @@ Logs go to standard output (Connect → Logs); `LOG_LEVEL` sets the verbosity. L
 | Signed out after every restart | `PIM_SECRET_KEY` not set. |
 | "Registration is closed" | An account exists; supply `ADMIN_INVITE_CODE`, or have the administrator add you in Connect. |
 | Re-index appears stuck | It runs in a background thread; progress is shown on `?page=raging`. After a server restart an interrupted run is gone — start it again. |
-| Map has no background tiles | The server/browser cannot reach `basemaps.cartocdn.com`; polygons still work. |
+| Map has no background tiles | The browser cannot reach `tile.openstreetmap.org` (OpenStreetMap); polygons still work. The tile server is set in `pages/pages_constants.py` (`MAP_TILES`). |
 
 ---
 

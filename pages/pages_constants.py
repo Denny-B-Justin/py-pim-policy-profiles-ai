@@ -78,6 +78,12 @@ MAP_LEGEND = [
     (MAP_COLORS["nonEnglish"], "Original language not English"),
     (MAP_NO_DATA_FILL, "No policy data"),
 ]
+# Base map: standard OpenStreetMap tiles (attribution is required by the OSM tile usage policy).
+MAP_TILES = {
+    "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "attribution": '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    "maxZoom": 10,   # the country polygons are 1:110m Natural Earth – deeper zoom shows their coarse borders
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # repository

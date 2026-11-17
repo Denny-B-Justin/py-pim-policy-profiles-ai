@@ -24,7 +24,7 @@
       "checksum": "dee572222af892ad69e3b306575198ca"
     },
     "ARCHITECTURE.md": {
-      "checksum": "e8d67a72f6b5b7a4937064fe4dd060c9"
+      "checksum": "b60bdfd2b2c32443cceff3010beb4f0c"
     },
     "README.md": {
       "checksum": "c58c33653225ee95ffaa96d6f0e056cb"
@@ -51,7 +51,7 @@
       "checksum": "260c81a4759baf163c025001c4f27872"
     },
     "assets/map.js": {
-      "checksum": "7bc9399d57fb96b65559807528329571"
+      "checksum": "5b23c9998a326d20a4ec2811ae7d72cf"
     },
     "assets/pim-pam-logo.png": {
       "checksum": "c6d7aab1c06f8084bc2910953c42784b"
@@ -165,13 +165,13 @@
       "checksum": "a47fb740b99b0d6ad819a8659b7703e0"
     },
     "pages/map_page.py": {
-      "checksum": "60adb89f3a5d8d4215d0651e5398a4c3"
+      "checksum": "4333cdae13373ac4f592d907eeaf0425"
     },
     "pages/not_found.py": {
       "checksum": "3fecff835d6f8979c400ef4add30e13e"
     },
     "pages/pages_constants.py": {
-      "checksum": "159f8d73cc77ac23ec6dcafd1f9be4b7"
+      "checksum": "900e4a29887b40948b4d539d02de78cb"
     },
     "pages/policy_changes.py": {
       "checksum": "96abd76d2ed39fd4994236358f2d8eba"
