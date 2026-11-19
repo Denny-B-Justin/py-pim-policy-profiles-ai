@@ -1,6 +1,6 @@
 # PIM Policy Profiles AI — Python Dash
 
-Dash port of the Next.js + FastAPI "PIM Policy Profiles AI" application, built to run on **Posit Connect** (Python 3.11.9).
+Dash port of the Next.js + FastAPI "PIM Policy Profiles AI" application, built to run on **Posit Connect** (Python 3.12.12).
 
 * Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.policy_repo_*` tables, documents in the UC Volume folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files`
 * Search: **Databricks AI Search** (formerly Vector Search) index over the `policy_repo_document_chunks` table – see [docs/AI_SEARCH.md](docs/AI_SEARCH.md)
@@ -84,7 +84,7 @@ Cron job that was a Vercel cron route: either call `GET /api/imf-pima/refresh` w
 ## Run locally
 
 ```bash
-python3.11 -m venv .venv && source .venv/bin/activate
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.sample .env        # fill in Databricks + MAI values
 python app.py              # http://localhost:8050/?page=home
