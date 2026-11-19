@@ -23,7 +23,7 @@ Per provider:
     gemini → google-genai (`client.interactions.create`)
 
 The gateway offers neither streaming nor embeddings, so the app polls background jobs
-(utils/jobs.py) and retrieves with BM25 (utils/rag.py).
+(utils/jobs.py) and retrieves from Databricks AI Search (utils/rag.py).
 """
 
 from __future__ import annotations

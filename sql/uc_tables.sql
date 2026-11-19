@@ -19,7 +19,7 @@
 -- Document files live in the existing volume folder
 --   /Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/country-files/   (document repository + _manifest.json)
 -- The search index is the table policy_repo_document_chunks (end of this file) + the Databricks AI Search index
--- prd_mega.sgpbpi163.policy_repo_document_chunks_index built on it (notebooks/01_backfill_document_chunks.py, docs/AI_SEARCH.md).
+-- prd_mega.sgpbpi163.policy_repo_document_chunks_index built on it (docs/AI_SEARCH.md).
 -- The v1 JSON chunk files in …/upload-files/chunks/ are no longer used.
 
 -- policy_repo_countries  ←  Postgres `countries`
@@ -267,4 +267,4 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_document_ingest_log (
   CONSTRAINT pk_policy_repo_document_ingest_log PRIMARY KEY (document_id)
 )
 USING DELTA
-COMMENT 'Last chunking outcome per document (indexed / no_text_layer / empty / missing_file / unsupported / failed) – written by the app and the backfill notebook.';
+COMMENT 'Last chunking outcome per document (indexed / no_text_layer / empty / missing_file / unsupported / failed) – written by the app.';

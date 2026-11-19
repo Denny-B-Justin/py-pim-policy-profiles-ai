@@ -196,9 +196,8 @@ SCHEMA: dict[str, dict] = {
         "fks": [("iso3", "countries", "iso3")],
     },
     # ── search index ────────────────────────────────────────────────────────
-    # Source table of the Databricks AI Search Delta Sync index.  Written by utils/indexer.py (uploads, re-index,
-    # reconcile) and by the one-time backfill notebook (notebooks/01_backfill_document_chunks.py) with the SAME
-    # chunker (utils/chunking.py).  Column types are those AI Search can sync and filter on (INT, not SMALLINT).
+    # Source table of the Databricks AI Search Delta Sync index.  Written by utils/rag.py (uploads, re-index,
+    # reconcile) with the chunker in utils/chunking.py.  Column types are those AI Search can sync and filter on (INT, not SMALLINT).
     # Change Data Feed must stay on: the index syncs from it.
     "document_chunks": {
         "comment": "Search-index chunks of the policy documents (one row per chunk). Source of the AI Search index "
@@ -239,7 +238,7 @@ SCHEMA: dict[str, dict] = {
     },
     "document_ingest_log": {
         "comment": "Last chunking outcome per document (indexed / no_text_layer / empty / missing_file / unsupported / "
-                   "failed) – written by the app and the backfill notebook.",
+                   "failed) – written by the app.",
         "cols": [
             ("document_id", "STRING NOT NULL"),
             ("record_id", "STRING"),
@@ -250,7 +249,7 @@ SCHEMA: dict[str, dict] = {
             ("detail", "STRING"),
             ("chunk_count", "INT"),
             ("chunker_version", "STRING"),
-            ("source", "STRING"),                        # notebook_backfill | app_upload | app_reindex | app_reconcile
+            ("source", "STRING"),                        # app_upload | app_reindex | app_reconcile
             ("processed_at", "TIMESTAMP NOT NULL"),
         ],
         "pk": ["document_id"],

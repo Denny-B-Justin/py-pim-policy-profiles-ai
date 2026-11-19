@@ -1,11 +1,7 @@
 """
-Section-aware chunking for the search index  ·  SHARED CODE (keep identical in both places)
+Section-aware chunking for the search index (new uploads, re-index, reconcile).
 
-    utils/chunking.py                         (the Dash app – new uploads, re-index, reconcile)
-    notebooks/01_backfill_document_chunks.py  (the one-time Databricks backfill – cell "Shared chunking code")
-
-Both copies must produce the same rows for the same file, so this module is pure Python (only `re`, `json`,
-`hashlib`): no app imports, no Databricks imports.  Bump CHUNKER_VERSION whenever the output can change; the
+Pure Python (only `re`, `json`, `hashlib`): no app imports, no Databricks imports.  Bump CHUNKER_VERSION whenever the output can change; the
 version is stored on every row of `policy_repo_document_chunks` and in `policy_repo_document_ingest_log`.
 
 Pipeline (one document):
@@ -270,7 +266,7 @@ def chunk_pages(pages: list[tuple], chunk_size: int = CHUNK_SIZE, parent_size: i
 
 
 # ── rows of policy_repo_document_chunks ─────────────────────────────────────
-# Columns written by the app and the notebook (created_at / updated_at are set by SQL).  Keep in step with
+# Columns written by the app (created_at / updated_at are set by SQL).  Keep in step with
 # utils/schema.py → SCHEMA["document_chunks"].
 CHUNK_COLUMNS = [
     "chunk_id", "document_id", "record_id", "lang_type", "lang_code", "chunk_index", "page", "page_end",

@@ -215,9 +215,6 @@
     "scripts/issue_api_key.py": {
       "checksum": "00c8f8b020152320654e688146030d09"
     },
-    "scripts/migrate_from_postgres.py": {
-      "checksum": "9cd29e680bb53e58666b30e432dbf312"
-    },
     "scripts/reindex.py": {
       "checksum": "b2a07112f998e725b0456e7128c06ca5"
     },

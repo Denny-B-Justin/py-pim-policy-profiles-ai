@@ -404,7 +404,7 @@ EXTRACT_MIN_CHARS_PER_PAGE = 40
 EXTRACT_MAX_DETECT_BYTES = 40 * 1024 * 1024
 
 # Search index + retrieval
-# Chunk sizes live in utils/chunking.py (shared verbatim with the Databricks backfill notebook); these two are
+# Chunk sizes live in utils/chunking.py (); these two are
 # informational copies for the statistics pages.
 CHUNK_SIZE = 1000
 CHUNK_PARENT_CHARS = max(CHUNK_SIZE * 2, 1800)   # 2000

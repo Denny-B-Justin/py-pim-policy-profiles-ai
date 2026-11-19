@@ -22,7 +22,7 @@ from dash.exceptions import PreventUpdate
 
 import constants as C
 from pages.pages_constants import RAGING_BUTTON_LABELS, RAGING_TITLE as TITLE
-from utils import auth, indexer, jobs, rag
+from utils import ai_search, auth, indexer, jobs, rag
 from utils.audit import log_audit
 from utils.routes import asset, href
 from utils.ui import cn, loading_spinner
@@ -49,13 +49,39 @@ def _n(v) -> str:
     return f"{int(v):,}"
 
 
+def index_view():
+    """One line on the AI Search index: status, rows, last sync, and any access problem (from utils/ai_search)."""
+    try:
+        st = ai_search.status()
+    except Exception:  # noqa: BLE001
+        log.exception("raging index status failed")
+        return None
+    sync = st.get("sync") or {}
+    rows = st.get("indexed_row_count")
+    line = [html.Strong("Search index: "), st["index"], " · ",
+            ("ready" if st.get("ready") else "not ready" if st.get("ready") is False else "status unknown"),
+            f" · {int(rows):,} rows" if rows is not None else "",
+            f" · last sync {sync['last_ok']}" if sync.get("last_ok") else "",
+            "" if sync.get("sync_on_write") else " · automatic sync after uploads is off (PIM_AI_SEARCH_SYNC=0)"]
+    problems = sync.get("problems") or []
+    if not st.get("enabled"):
+        problems = [{"operation": "configuration", "error": st.get("message"), "fix": ""}]
+    return html.Div([
+        html.P(line, className="text-sm text-muted-foreground"),
+        *[html.Div([c for c in (html.Strong(f"Access problem ({p['operation']}): "), p.get("error") or "",
+                                html.Br() if p.get("fix") else None, p.get("fix") or "") if c is not None],
+                   className="mt-2 rounded-md border border-red-300 bg-red-50 p-3 text-xs text-red-800")
+          for p in problems],
+    ], className="mt-4")
+
+
 def stats_view():
     try:
         s = rag.stats_detail(force=True)["summary"]
     except Exception:  # noqa: BLE001
         log.exception("raging stats failed")
         return html.P("Unable to load collection statistics.", className="text-sm text-muted-foreground")
-    return html.Div([
+    return html.Div([html.Div([
         html.Div([html.P("Last Updated", className="text-sm text-muted-foreground"),
                   html.P(s["last_updated"] or "—", className="mt-1 text-2xl font-semibold")], className=CARD),
         html.Div([html.P("Documents Indexed", className="text-sm text-muted-foreground"),
@@ -65,7 +91,7 @@ def stats_view():
         html.Div([html.P("Total Tokens", className="text-sm text-muted-foreground"),
                   html.P(_n(s["total_tokens"]) if s["total_tokens"] is not None else "—",
                          className="mt-1 text-2xl font-semibold")], className=CARD),
-    ], className="grid grid-cols-1 gap-4 sm:grid-cols-3")
+    ], className="grid grid-cols-1 gap-4 sm:grid-cols-3"), index_view()])
 
 
 def button_children(key: str, active: str | None):
@@ -156,7 +182,8 @@ def layout(params=None):
         html.P([
             "Trigger a re-index of documents from the ",
             html.A("PIM Policy Repository", href=href("repository"), className="underline hover:text-foreground"),
-            ". This clears the existing collection and re-ingests all matching documents. "
+            ". Every matching document is re-chunked in place (search keeps working meanwhile) and the AI Search "
+            "index is then asked to sync. "
             + ("An admin API key is required." if _key_required() else "You must be signed in."),
         ], className="mb-4 text-sm text-muted-foreground"),
         html.Div([

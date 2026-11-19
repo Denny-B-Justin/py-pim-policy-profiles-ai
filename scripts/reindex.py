@@ -5,9 +5,6 @@ index to sync.  Documents are rewritten in place – the index keeps answering, 
     python scripts/reindex.py                 # English documents (+ drops chunks of deleted ENG documents)
     python scripts/reindex.py --lang all      # English + original-language documents
     python scripts/reindex.py --lang ori      # original-language documents only
-
-For the first, bulk load of the documents already in the volume use the Databricks notebook
-notebooks/01_backfill_document_chunks.py instead (parallel, incremental, same chunker) – see docs/AI_SEARCH.md.
 """
 from __future__ import annotations
 
