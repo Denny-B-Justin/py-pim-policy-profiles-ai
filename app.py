@@ -41,7 +41,7 @@ server = app.server
 # Signed session cookie for local accounts (set PIM_SECRET_KEY so all Connect processes share it).
 server.secret_key = C.SECRET_KEY or secrets.token_hex(32)
 server.config.update(SESSION_COOKIE_NAME=C.SESSION_COOKIE_NAME, SESSION_COOKIE_HTTPONLY=True,
-                     SESSION_COOKIE_SAMESITE=C.SESSION_COOKIE_SAMESITE,
+                     SESSION_COOKIE_SAMESITE=C.SESSION_COOKIE_SAMESITE, SESSION_COOKIE_SECURE=C.SESSION_COOKIE_SECURE,
                      PERMANENT_SESSION_LIFETIME=timedelta(days=C.SESSION_LIFETIME_DAYS), MAX_CONTENT_LENGTH=C.MAX_UPLOAD_BYTES + 1024 * 1024)
 if not C.SECRET_KEY:
     log.warning("PIM_SECRET_KEY is not set – local sign-ins will not survive a restart / other processes.")

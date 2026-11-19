@@ -138,7 +138,7 @@ All tables carry the prefix `policy_repo_` and live in `prd_mega.sgpbpi163`. The
 | `policy_repo_document_chunks` | one row per chunk: `chunk_id`, `document_id`, `record_id`, `lang_type`, `lang_code`, `section_heading`, `page`, `chunk_index`, `content`, `embedding_text`, copied record fields, `row_hash` – the source of the AI Search index (see docs/AI_SEARCH.md) |
 | `policy_repo_briefings_cache` | `brief_key` (`profile` / `transparency`), `country`, `lang_type`, `scope` (`all` / `national` / `sub:<entity>`), `content` (Markdown), `generated_at` |
 | `policy_repo_imf_pima_assessments` | per country: assessment type (PIMA / C-PIMA), title, status, mission date, report/summary URLs, `source` (`portal`, `imf.org`, curated reference), `fetched_at` |
-| `policy_repo_users` | `email`, `name`, `password_hash` (bcrypt), `created_at` |
+| `policy_repo_users` | `id`, `name`, `email`, `email_verified`, `image`, `password_hash` (bcrypt) |
 | `policy_repo_partner_api_keys` | `key_hash` (SHA-256), `key_prefix`, `name`, `contact_email`, `rate_limit_per_minute`, `active`, `last_used_at`, `revoked_at` |
 | `policy_repo_audit_logs` | `user_email`, `action` (`create`, `update`, `delete`, `upload`), `entity` (`record`, `document`, `batch`), `entity_id`, `detail`, `ip`, `created_at` |
 | `policy_repo_batch_imports` / `policy_repo_batch_import_rows` | one row per upload and per spreadsheet row; `raw` (the original row) and `errors` hold JSON text |
@@ -321,10 +321,15 @@ All instructions given to the model live here: Coach system prompt, condense pro
 
 * **Who is "signed in"?**
   1. On Posit Connect, the `RStudio-Connect-Credentials` header identifies the Connect user (`connect:<username>`) — no extra login.
-  2. Otherwise a **local account** (`policy_repo_users`): e-mail + password (bcrypt), stored in a signed Flask cookie `pim_session` (30 days). Set `PIM_SECRET_KEY` so the cookie stays valid across restarts and processes.
+  2. Otherwise a **local account** (`policy_repo_users`: `id`, `name`, `email`, `email_verified`, `image`, `password_hash`), signed in on `?page=signin` and out with **Sign out** in the header (`POST /auth/signout`). Set `PIM_SECRET_KEY` so sessions stay valid across restarts and processes.
+* **How local passwords are protected** (`utils/auth.py`):
+  * stored only as a **bcrypt** hash (cost 12, per-password salt); never logged or cached. Older cheaper hashes are upgraded at the next sign-in. Passwords are 8 characters to 72 bytes (bcrypt's limit).
+  * in transit by **HTTPS** (TLS from Posit Connect). The session cookie `pim_session` (30 days) is `Secure`, `HttpOnly`, `SameSite=Lax` and signed with `PIM_SECRET_KEY`; it holds only the user id and an HMAC of the stored hash — no e-mail, name or hash.
+  * every request re-checks the session against the table (trusted for 60 s), so **deleting a user or changing their password signs them out everywhere**; changing `PIM_SECRET_KEY` signs everybody out.
+  * an unknown e-mail costs the same bcrypt work as a wrong password (no account discovery by timing); sign-in is limited to 10 tries/min per IP and 10 per 15 min per account; the invite code is compared in constant time.
 * **Registering**: the very first account can be created freely; after that registration requires `ADMIN_INVITE_CODE`.
 * **Roles**: there are **no roles**. Anyone signed in can create, edit and delete records and documents, run imports, translations and re-indexes. Anonymous visitors can read everything, use the AI Coach and generate briefings (a briefing is only archived in the cache when the person is signed in). On Connect, control *who may open the content at all* (and therefore who can sign in) with the content's access list.
-* **Rate limits** (in-process, per client IP): 30 writes/min; 10/min on the public export route; per-key limits on the partner API.
+* **Rate limits** (in-process, per client IP): 30 writes/min; sign-in as above; 10/min on the public export route; per-key limits on the partner API.
 * **Audit**: every create/update/delete/upload/re-index/batch action writes a row to `policy_repo_audit_logs` with user, entity, and the names of changed fields.
 * **Partner API keys**: `python scripts/issue_api_key.py --name … --email …` prints the key **once**; only its SHA-256 hash is stored. Revoke with `--revoke <key id>`.
 
@@ -379,7 +384,7 @@ Prefer the web interface: it keeps the search index, link status, audit log and 
 | **Refresh IMF PIMA data** | `python scripts/cron_refresh_pima.py` (or `GET /api/imf-pima/refresh` with the cron secret) | Countries page updates. Add curated entries in `data/imf-pima-references.json` first if needed. |
 | **Regenerate a briefing** | Open the briefing page → *Generate* | The cache row is overwritten. To drop stale ones: `DELETE FROM policy_repo_briefings_cache WHERE country = 'LTU'`. |
 | **Add a person who may edit** | Connect: give them access to the content. Local account: they register with the invite code (or you insert a row with a bcrypt hash) | — |
-| **Remove / reset a local account** | `DELETE FROM policy_repo_users WHERE email = '…'`; for a password reset set `password_hash` to a new bcrypt hash (`python -c "import bcrypt;print(bcrypt.hashpw(b'NewPass123',bcrypt.gensalt()).decode())"`) | — |
+| **Remove / reset a local account** | `DELETE FROM policy_repo_users WHERE email = '…'`; for a password reset set `password_hash` to a new bcrypt hash (`python -c "import bcrypt;print(bcrypt.hashpw(b'NewPass123',bcrypt.gensalt(12)).decode())"`) | Either one ends that person's open sessions within a minute. |
 | **Issue / revoke a partner API key** | `python scripts/issue_api_key.py --name "Org" --email x@y --rate-limit 120` / `--revoke <id>` | The plaintext key is shown once. |
 | **Fill the optional `tokens` or `pages` numbers** | `UPDATE … SET tokens = …` or the *Pages* field in the form | Statistics → *Total Tokens*. |
 | **Load the country list on a brand-new setup** | `python scripts/seed_countries.py` | — |

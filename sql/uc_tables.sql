@@ -93,7 +93,6 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_users (
   email_verified TIMESTAMP,
   image STRING,
   password_hash STRING,
-  created_at TIMESTAMP,
   CONSTRAINT pk_policy_repo_users PRIMARY KEY (id)
 )
 USING DELTA

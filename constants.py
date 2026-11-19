@@ -60,10 +60,19 @@ DASH_DEBUG = _env("DASH_DEBUG", "0") == "1"
 HOST = "0.0.0.0"
 PORT = _env_int("PORT", 8050)
 
+# Local sign-in.  false (default) = no sign-in / register pages (they answer 404) and every visitor may make
+# changes as "Guest" – restrict who can open the app with the Posit Connect content access list.  Posit Connect
+# identities are still recognised and recorded in the audit log.
+AUTH_ENABLED = _env("AUTH_ENABLED", "false").lower() in ("1", "true", "yes")
+
 # Signed session cookie for local accounts
 SESSION_COOKIE_NAME = "pim_session"
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_LIFETIME_DAYS = 30
+# Secure = the browser sends the cookie over HTTPS only (Posit Connect; browsers also allow it on http://localhost)
+SESSION_COOKIE_SECURE = _env("PIM_SESSION_COOKIE_SECURE", "1") in ("1", "true", "True")
+SESSION_RECHECK_SECONDS = 60                  # how long a session's user row is trusted before it is re-read
+BCRYPT_ROUNDS = 12                            # password hash cost (older, cheaper hashes are upgraded at sign-in)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. Databricks / Azure Unity Catalog
