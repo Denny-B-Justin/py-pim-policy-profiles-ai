@@ -23,11 +23,13 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter, defaultdict
+from itertools import zip_longest
 import threading
 import time
 
 import constants as C
-from utils import ai_search, db, extract, queries, rag, storage
+from utils import ai_search, db, extract, queries, storage
 from utils.chunking import CHUNK_COLUMNS, CHUNKER_VERSION, apply_record_metadata, chunk_pages, chunk_rows
 from utils.db import table
 
@@ -62,7 +64,7 @@ def _retry(fn, *args, attempts: int = 4):
 
 
 def _after_write() -> None:
-    rag.invalidate()
+    invalidate()
     ai_search.request_sync()
 
 
@@ -216,7 +218,7 @@ def sync_record_metadata(record_id: str) -> int:
         db.invalidate(_CHUNKS)
         _after_write()
     else:
-        rag.invalidate()
+        invalidate()
     return len(changed)
 
 
@@ -282,7 +284,7 @@ def reconcile(max_ingests: int = 12) -> dict:
         except Exception:  # noqa: BLE001
             log.exception("reconcile: metadata sync of %s failed", rid)
 
-    rag.invalidate()
+    invalidate()
     synced = ai_search.sync_best_effort()
     return {"missing": len(missing), "stale": len(stale), "ingested": ingested, "failed": failed,
             "ghosts": len(ghosts), "ghosts_deleted": len(ghosts), "metadata_records": len(drift),
@@ -366,7 +368,7 @@ def reindex(lang_filter: str = "eng", clear_existing: bool = True, status=None, 
                 failed += 1
                 tick({"current": i, "total": total, "document": label, "status": "error",
                       "error": str(exc) or type(exc).__name__})
-        rag.invalidate()
+        invalidate()
         if ai_search.enabled():
             say("Asking AI Search to sync the index…")
             ai_search.sync_best_effort()
@@ -379,3 +381,108 @@ def reindex_all(progress=None) -> dict:
     """Rebuild the whole index (kept for scripts / cron)."""
     res = reindex("all", True, progress=(lambda p: progress(p["current"], p["total"])) if progress else None)
     return {"documents": res["succeeded"] + res["failed"], "indexed": res["succeeded"], "failed": res["failed"]}
+
+
+# ── retrieval (AI Search) ────────────────────────────────────────────────────
+_TIER_LABELS = {1: "Primary Legislation", 2: "Secondary Regulations", 3: "Procedural Guidelines", 4: "Strategies"}
+_detail_cache: dict = {"data": None, "expires": 0.0}
+
+
+def invalidate() -> None:
+    """Drop cached aggregates (the search itself is served by AI Search, which has no in-process index)."""
+    _detail_cache.update(data=None, expires=0.0)
+
+
+def with_default_exclusions(filters: dict | None) -> dict:
+    out = {k: v for k, v in (filters or {}).items() if k != "include_archived"}
+    if "record_status" not in out and not (filters or {}).get("include_archived"):
+        out["record_status"] = {"$ne": "archived"}
+    return out
+
+
+def _merge_query_results(result_lists: list[list[dict]], k: int) -> list[dict]:
+    """Round-robin merge of per-query lists, de-duplicated, capped at k."""
+    seen: set = set()
+    merged: list[dict] = []
+    for group in zip_longest(*result_lists):
+        for d in group:
+            if d is None:
+                continue
+            key = (d["metadata"].get("record_id"), hash(d["content"]))
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(d)
+            if len(merged) >= k:
+                return merged
+    return merged
+
+
+def retrieve(query: str | list[str], filters: dict | None = None, k: int | None = None,
+             pad_to_k: bool = False) -> list[dict]:
+    """Top-k chunks → [{"content": str, "metadata": {...}}] via Databricks AI Search.
+
+    pad_to_k is accepted for briefings; AI Search always returns up to k nearest chunks, so nothing is padded.
+    """
+    if not ai_search.enabled():
+        raise ai_search.AISearchError("Search is unavailable: set PIM_SEARCH_BACKEND=ai_search on a Databricks "
+                                      "(non-sqlite) backend.")
+    k = k or C.RETRIEVER_K
+    queries_ = [query] if isinstance(query, str) else [q for q in query if q]
+    if not queries_:
+        return []
+    f = with_default_exclusions(filters)
+    return _merge_query_results([ai_search.query(q, f, k) for q in queries_], k)
+
+
+# ── statistics ───────────────────────────────────────────────────────────────
+def stats_detail(force: bool = False) -> dict:
+    """Aggregates for the Statistics page, computed from the chunks table (cached 60 s)."""
+    now = time.monotonic()
+    if not force and _detail_cache["data"] is not None and now < _detail_cache["expires"]:
+        return _detail_cache["data"]
+    rows = db.query(f"SELECT document_id, record_id, country, lang_type, year, policy_guidance_tier, created_at "
+                    f"FROM {table(_CHUNKS)}")
+    records: set = set()
+    langs: dict[str, set] = defaultdict(set)
+    country_docs: dict[str, set] = defaultdict(set)
+    country_chunks: Counter = Counter()
+    tier_docs: dict[int, set] = defaultdict(set)
+    year_docs: dict[int, set] = defaultdict(set)
+    last = None
+    for r in rows:
+        rid = r["record_id"]
+        records.add(rid)
+        langs[r["lang_type"]].add(rid)
+        country_docs[r["country"]].add(rid)
+        country_chunks[r["country"]] += 1
+        tier, year = db.to_int(r.get("policy_guidance_tier")), db.to_int(r.get("year"))
+        if tier is not None:
+            tier_docs[tier].add(rid)
+        if year is not None:
+            year_docs[year].add(rid)
+        if r.get("created_at") and (last is None or str(r["created_at"]) > last):
+            last = str(r["created_at"])
+    tok = sum(db.to_int(t["tokens"]) or 0 for t in db.query(f"SELECT id, tokens FROM {table('policy_records')}")
+              if t["id"] in records)
+    names = queries.country_name_map()
+    by_country = [{"country": c or "Unknown", "country_name": names.get(c), "documents": len(d),
+                   "chunks": country_chunks[c]} for c, d in country_docs.items()]
+    by_country.sort(key=lambda x: (-x["documents"], x["country"] or ""))
+    by_tier = [{"tier": t, "label": _TIER_LABELS.get(t, f"Tier {t}"), "documents": len(d)}
+               for t, d in sorted(tier_docs.items())]
+    by_year = [{"year": str(y), "documents": len(d)} for y, d in sorted(year_docs.items())]
+    data = {
+        "summary": {
+            "total_chunks": len(rows), "total_documents": len(records), "total_tokens": tok or None,
+            "lang_eng_documents": len(langs.get("ENG", ())), "lang_ori_documents": len(langs.get("ORI", ())),
+            "last_updated": last[:10] if last else None, "collection_name": C.AI_SEARCH_INDEX,
+        },
+        "by_country": by_country, "by_tier": by_tier, "by_year": by_year,
+        "vector_store": "Delta table + AI Search index",
+        "search_engine": f"AI Search · {C.AI_SEARCH_QUERY_TYPE}" + (" + rerank" if C.AI_SEARCH_RERANK else ""),
+        "chunk_size": C.CHUNK_PARENT_CHARS, "chunk_overlap": 0,
+        "retriever_type": f"ai_search · {C.AI_SEARCH_QUERY_TYPE.lower()}",
+    }
+    _detail_cache.update(data=data, expires=now + 60)
+    return data
