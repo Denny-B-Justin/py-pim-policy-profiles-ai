@@ -145,7 +145,7 @@ def main() -> None:
             db.insert("countries", {"iso3": c["iso3"], "name": c["name"], "gdp_2024_bn": c["gdpBn"],
                                     "pub_inv_pct_gdp": c["pubInvPctGdp"], "pub_inv_2024_bn": c["pubInvBn"]})
     if args.reset:
-        for t in ("document_chunks", "documents", "policy_records", "briefings_cache"):
+        for t in ("documents", "policy_records", "briefings_cache", "document_chunks", "document_ingest_log"):
             db.execute(f"DELETE FROM {table(t)}")
     if db.query(f"SELECT 1 FROM {table('policy_records')} LIMIT 1") and not args.reset:
         print("records already present – use --reset to rebuild")

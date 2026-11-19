@@ -2,8 +2,7 @@
 Load the 196-country reference list (data/countries.json) into policy_repo_countries.
 
 The app needs these rows for the country pick-lists, names on every page, the map and the IMF PIMA refresh.
-Run it once on a NEW Unity Catalog setup (if you migrated from the old Postgres database, `migrate_from_postgres.py`
-already copied the countries table and you can skip this).
+Run it once on a NEW Unity Catalog setup.
 
     python scripts/seed_countries.py              # insert the countries that are missing (idempotent)
     python scripts/seed_countries.py --update     # also refresh name / GDP / public-investment values of existing rows

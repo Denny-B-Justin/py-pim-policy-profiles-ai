@@ -1,7 +1,7 @@
 """
 AI Coach question answering (port of `rag/app/generation/chains.py::rag_query` + `api/chat.py`).
 
-condense follow-up → retrieve (BM25) → answer with mAI.  No streaming: the Coach page shows a typing
+condense follow-up → retrieve (AI Search) → answer with mAI.  No streaming: the Coach page shows a typing
 indicator and renders the whole answer when the (background) job finishes.
 """
 

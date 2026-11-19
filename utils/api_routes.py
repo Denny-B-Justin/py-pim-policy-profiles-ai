@@ -92,7 +92,7 @@ def _camelize(o):
 
 def _doc_out(d: dict, camel: bool = False) -> dict:
     """Public view of a document row (never leaks the internal storage key)."""
-    out = {k: v for k, v in d.items() if k != "file_path"}
+    out = {k: v for k, v in d.items() if k not in ("file_path", "blob_url")}
     out["download_url"] = _abs(f"/api/download/{d['id']}")
     return _camelize(out) if camel else out
 
@@ -141,6 +141,8 @@ def download_document(doc_id: str):
     if not doc:
         return _err("Document not found", 404)
     key = doc["file_path"]
+    if not key:
+        return _err(storage.NOT_IN_REPOSITORY, 404)
     try:
         if not storage.exists(key):
             return _err("Failed to fetch file", 502)
@@ -171,6 +173,8 @@ def download_country(iso3: str):
     total = 0
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:     # PDFs / DOCX are already compressed
         for d in docs:
+            if not d["file_path"]:                                  # not transferred to the repository yet
+                continue
             try:
                 data = storage.read(d["file_path"])
             except Exception:  # noqa: BLE001 - a failed file drops that one document, not the archive
@@ -424,11 +428,18 @@ def _v1_error(status: int, code: str, message: str, headers: dict | None = None)
     return _json({"error": {"code": code, "message": message}}, status, headers)
 
 
+def _v1_disabled() -> Response:
+    return _v1_error(503, "NotAvailable", "The partner API is not available on this deployment.")
+
+
 def with_api_key(fn):
-    """X-API-Key (sha256 lookup) + per-partner rate limit, like `withApiKey()` in lib/api-auth.ts."""
+    """X-API-Key (sha256 lookup) + per-partner rate limit, like `withApiKey()` in lib/api-auth.ts.
+    Answers 503 while the partner API is switched off (constants.PARTNER_API_ENABLED – no keys table yet)."""
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        if not C.PARTNER_API_ENABLED:
+            return _v1_disabled()
         partner = api_keys.validate_api_key(request.headers.get("X-API-Key"))
         if not partner:
             return _v1_error(401, "Unauthorized", "Missing or invalid X-API-Key.")
@@ -553,6 +564,8 @@ def v1_coach(_partner):
 @bp.get("/api/v1/openapi.json")
 def v1_openapi():
     """Public (no key) so the Redoc viewer on the API page – and partners' own viewers – can load it."""
+    if not C.PARTNER_API_ENABLED:
+        return _v1_disabled()
     with open(C.OPENAPI_JSON, encoding="utf-8") as fh:
         spec = fh.read().replace("{{ORIGIN}}", _origin() + api_url("/").rstrip("/"))
     return Response(spec, mimetype="application/json",

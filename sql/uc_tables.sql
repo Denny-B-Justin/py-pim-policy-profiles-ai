@@ -13,8 +13,14 @@
 
 -- Permissions the app's service principal needs (replace <client-id> with DATABRICKS_CLIENT_ID):
 --   GRANT USE CATALOG ON CATALOG prd_mega TO `<client-id>`;
---   GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE, CREATE VOLUME ON SCHEMA prd_mega.sgpbpi163 TO `<client-id>`;
---   GRANT READ VOLUME, WRITE VOLUME ON VOLUME prd_mega.sgpbpi163.policy_repo_documents TO `<client-id>`;   -- after the volume exists
+--   GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE ON SCHEMA prd_mega.sgpbpi163 TO `<client-id>`;
+--   GRANT READ VOLUME, WRITE VOLUME ON VOLUME prd_mega.sgpbpi163.vgpbpi163 TO `<client-id>`;
+--
+-- Document files live in the existing volume folder
+--   /Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/country-files/   (document repository + _manifest.json)
+-- The search index is the table policy_repo_document_chunks (end of this file) + the Databricks AI Search index
+-- prd_mega.sgpbpi163.policy_repo_document_chunks_index built on it (docs/AI_SEARCH.md).
+-- The v1 JSON chunk files in …/upload-files/chunks/ are no longer used.
 
 -- policy_repo_countries  ←  Postgres `countries`
 CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_countries (
@@ -70,7 +76,7 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_documents (
   lang_label STRING,
   translation_source STRING,
   text_layer BOOLEAN,
-  file_path STRING NOT NULL,
+  blob_url STRING,
   file_name STRING,
   file_size INT,
   uploaded_at TIMESTAMP NOT NULL,
@@ -78,7 +84,7 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_documents (
   CONSTRAINT fk_policy_repo_documents_record_id FOREIGN KEY (record_id) REFERENCES prd_mega.sgpbpi163.policy_repo_policy_records(id)
 )
 USING DELTA
-COMMENT 'Attached files (max 1 ENG + 1 ORI per record). file_path points into the UC Volume.';
+COMMENT 'Attached files (max 1 ENG + 1 ORI per record). The file lives in the volume repository (path via its _manifest.json or blob_url).';
 
 -- policy_repo_users  ←  Postgres `users`
 CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_users (
@@ -206,33 +212,59 @@ CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_imf_pima_assessments (
 USING DELTA
 COMMENT 'IMF PIMA / C-PIMA assessments (portal + curated references).';
 
--- policy_repo_document_chunks  ←  NEW (replaces langchain_pg_collection / langchain_pg_embedding / chunk_parents)
+-- ── search index ─────────────────────────────────────────────────────────────────────────────────────────────
+-- policy_repo_document_chunks  (new – replaces langchain_pg_embedding / chunk_parents and the JSON chunk files)
+-- Change Data Feed must stay ON: the AI Search Delta Sync index reads it.
 CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_document_chunks (
-  id STRING NOT NULL,
+  chunk_id STRING NOT NULL,
+  document_id STRING NOT NULL,
   record_id STRING NOT NULL,
-  document_id STRING,
-  country STRING NOT NULL,
+  lang_type STRING NOT NULL,
+  lang_code STRING,
+  chunk_index INT NOT NULL,
+  page INT,
+  page_end INT,
+  section_heading STRING,
+  content STRING NOT NULL,
+  embedding_text STRING NOT NULL,
+  char_count INT,
+  country STRING,
   country_name STRING,
   name_eng STRING,
   name_orig STRING,
-  year SMALLINT,
+  year INT,
   source STRING,
-  policy_guidance_tier SMALLINT,
-  strategy_tier SMALLINT,
-  lang_type STRING,
-  lang_code STRING,
+  policy_guidance_tier INT,
+  strategy_tier INT,
+  jurisdiction_level STRING,
+  jurisdiction_name STRING,
   record_status STRING NOT NULL,
-  section_heading STRING,
-  page INT,
-  chunk_index INT NOT NULL,
-  content STRING NOT NULL,
+  file_name STRING,
+  file_path STRING,
+  chunker_version STRING NOT NULL,
+  row_hash STRING NOT NULL,
   created_at TIMESTAMP NOT NULL,
-  CONSTRAINT pk_policy_repo_document_chunks PRIMARY KEY (id),
-  CONSTRAINT fk_policy_repo_document_chunks_record_id FOREIGN KEY (record_id) REFERENCES prd_mega.sgpbpi163.policy_repo_policy_records(id)
+  updated_at TIMESTAMP NOT NULL,
+  CONSTRAINT pk_policy_repo_document_chunks PRIMARY KEY (chunk_id)
 )
 USING DELTA
-COMMENT 'RAG text index: one row per ~2000-char section-aware chunk (replaces pgvector tables).';
+COMMENT 'Search-index chunks of the policy documents (one row per chunk). Source of the AI Search index <table>_index; record fields are copied in so the index can filter on them.'
+TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true');
 
--- Files (replaces Vercel Blob).  Layout inside the volume:  <ISO3>/<document-id>-<safe file name>
-CREATE VOLUME IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_documents
-COMMENT 'Policy documents (PDF / DOCX / TXT) – replaces Vercel Blob';
+-- policy_repo_document_ingest_log  (new – last chunking outcome per document)
+CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_document_ingest_log (
+  document_id STRING NOT NULL,
+  record_id STRING,
+  lang_type STRING,
+  file_path STRING,
+  file_size BIGINT,
+  status STRING NOT NULL,
+  detail STRING,
+  chunk_count INT,
+  chunker_version STRING,
+  source STRING,
+  processed_at TIMESTAMP NOT NULL,
+  CONSTRAINT pk_policy_repo_document_ingest_log PRIMARY KEY (document_id)
+)
+USING DELTA
+COMMENT 'Last chunking outcome per document (indexed / no_text_layer / empty / missing_file / unsupported / failed) – written by the app.';

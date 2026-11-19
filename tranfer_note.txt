@@ -1,3 +1,0 @@
-Neon Postgres:
-        https://console.neon.tech/app/projects/cool-breeze-80352918/branches/br-dry-heart-air4m1vn/tables 
-        

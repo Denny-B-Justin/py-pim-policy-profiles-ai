@@ -56,7 +56,11 @@ def attach_document(record_id: str, lang_type: str, file_name: str, data: bytes,
         raise DocumentError("Record not found.")
     if lang_type == "ENG":
         lang_code, lang_label = lang_code or "en", lang_label or "English"
-    key = storage.make_key(rec["country"], queries.db.uid(), file_name)
+    # the slot keeps its id on replacement; the file is filed in the repository by country / year / tier / language
+    current = queries.get_slot_document(record_id, lang_type)
+    doc_id = current["id"] if current else queries.db.uid()
+    country_name = queries.country_name_map().get(rec["country"], rec["country"])
+    key = storage.repository_key(rec, country_name, doc_id, lang_type, lang_label, file_name)
     size = storage.save(key, data)
     if text_layer is ...:
         try:
@@ -64,7 +68,7 @@ def attach_document(record_id: str, lang_type: str, file_name: str, data: bytes,
         except Exception:  # noqa: BLE001 - best effort; leaves the flag unknown
             text_layer = None
     doc = queries.upsert_document(
-        record_id, lang_type, key, lang_code=lang_code, lang_label=lang_label, file_name=file_name, file_size=size,
+        doc_id, record_id, lang_type, key, lang_code=lang_code, lang_label=lang_label, file_name=file_name, file_size=size,
         translation_source=translation_source if is_translation_source(translation_source) else None,
         text_layer=text_layer)
     replaced = doc.pop("_replaced_path", None)
@@ -87,7 +91,7 @@ def remove_document(doc_id: str) -> dict | None:
         storage.delete(doc["file_path"])
     except Exception:  # noqa: BLE001 - idempotent on “not found”
         log.warning("file deletion failed: %s", doc["file_path"], exc_info=True)
-    jobs.run_background(indexer.delete_chunks, doc["record_id"], doc["lang_type"])
+    jobs.run_background(indexer.delete_document_chunks, doc)
     queries.db.invalidate("")
     return doc
 
@@ -109,8 +113,10 @@ def translate_record_to_english(job_id: str, record_id: str, progress_fn=None) -
         raise DocumentError("Record not found")
     ori = next((d for d in rec["documents"] if d["lang_type"] == "ORI"), None)
     eng = next((d for d in rec["documents"] if d["lang_type"] == "ENG"), None)
-    if not ori or not ori.get("file_path"):
+    if not ori:
         raise DocumentError("This record has no original-language document to translate.")
+    if not ori.get("file_path"):
+        raise DocumentError(storage.NOT_IN_REPOSITORY)
     if eng:
         raise DocumentError("This record already has an English document.")
     data = storage.read(ori["file_path"])
@@ -132,6 +138,7 @@ def delete_record(record_id: str) -> bool:
             storage.delete(d["file_path"])
         except Exception:  # noqa: BLE001
             log.warning("file deletion failed: %s", d.get("file_path"), exc_info=True)
+        indexer.delete_document_chunks(d)
     queries.db.invalidate("")
     from utils import rag  # noqa: PLC0415
 

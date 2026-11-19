@@ -16,10 +16,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import constants as C  # noqa: E402
 from utils import api_keys  # noqa: E402
 
 
 def main() -> int:
+    if not C.PARTNER_API_ENABLED:
+        print("The partner API is switched off (PIM_PARTNER_API is not 1): it needs the "
+              f"{C.TABLES['partner_api_keys']} table, which has not been created.")
+        return 1
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--name", help="partner / organisation name")
     ap.add_argument("--email", help="contact e-mail")

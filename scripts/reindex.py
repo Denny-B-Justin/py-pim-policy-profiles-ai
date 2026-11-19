@@ -1,11 +1,10 @@
 """
-Rebuild the search index (policy_repo_document_chunks) from the stored documents.
+Re-chunk the stored documents into policy_repo_document_chunks (the source of the AI Search index) and ask the
+index to sync.  Documents are rewritten in place – the index keeps answering, unchanged passages are not re-embedded.
 
-    python scripts/reindex.py                 # English documents (clears the index first) – what the app's RAG admin page does
+    python scripts/reindex.py                 # English documents (+ drops chunks of deleted ENG documents)
     python scripts/reindex.py --lang all      # English + original-language documents
-    python scripts/reindex.py --lang ori      # append original-language documents (does not clear)
-
-Run it once after migrating data: the pgvector index of the old app is not copied (see docs/DATABRICKS_MIGRATION.md).
+    python scripts/reindex.py --lang ori      # original-language documents only
 """
 from __future__ import annotations
 

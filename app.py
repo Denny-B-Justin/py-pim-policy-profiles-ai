@@ -90,5 +90,9 @@ from utils import api_routes  # noqa: E402  (JSON / file endpoints under /api, p
 
 api_routes.register(server)
 
+from utils import ai_search  # noqa: E402
+
+ai_search.start_startup_check()   # logs an 'AI Search access report' once per process (read-only checks)
+
 if __name__ == "__main__":
     app.run(debug=C.DASH_DEBUG, host=C.HOST, port=C.PORT)
