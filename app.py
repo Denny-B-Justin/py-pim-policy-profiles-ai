@@ -12,7 +12,7 @@ import secrets
 from datetime import timedelta
 
 import dash
-from dash import Input, Output, dcc, html
+from dash import Input, Output
 
 import constants as C
 from pages import load, load_all
@@ -81,12 +81,11 @@ for _mod in load_all():
     if hasattr(_mod, "register_callbacks"):
         _mod.register_callbacks(app)
 
-from utils import widgets  # noqa: E402  (shared dialogs/buttons used by several pages)
+from utils import widgets  # noqa: E402  (shared widgets used by several pages)
 
-widgets.register_callbacks(app)
 widgets.register_recheck_callbacks(app)
 
-from utils import api_routes  # noqa: E402  (JSON / file endpoints under /api, plus the cron routes)
+from utils import api_routes  # noqa: E402  (JSON endpoints under /api, plus the cron routes)
 
 api_routes.register(server)
 

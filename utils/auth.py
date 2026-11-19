@@ -11,14 +11,13 @@ Replaces NextAuth (Google + email/password).  Identity sources, in priority orde
    signed Flask session cookie (same rules as the original: the first account bootstraps the
    admin, later accounts need `ADMIN_INVITE_CODE`).
 
-Mutating actions call `require_user()`; read-only pages stay public like the original app.
+Mutating actions call `write_guard()`; read-only pages stay public like the original app.
 """
 
 from __future__ import annotations
 
 import json
 import re
-from typing import Any
 
 import bcrypt
 from flask import request, session
@@ -64,11 +63,6 @@ def current_user() -> dict | None:
         return None
 
 
-def require_user() -> dict | None:
-    """Alias that documents intent: returns the user or None (caller shows the 'sign in' message)."""
-    return current_user()
-
-
 # ── local accounts ───────────────────────────────────────────────────────────
 def _find_user(email: str) -> dict | None:
     rows = db.query(f"SELECT * FROM {table('users')} WHERE LOWER(email) = :e", {"e": email.strip().lower()})
@@ -92,10 +86,6 @@ def authenticate(email: str, password: str) -> dict | None:
 def sign_in(user: dict) -> None:
     session["user"] = user
     session.permanent = True
-
-
-def sign_out() -> None:
-    session.pop("user", None)
 
 
 def register(name: str | None, email: str, password: str, invite_code: str | None) -> tuple[bool, str]:

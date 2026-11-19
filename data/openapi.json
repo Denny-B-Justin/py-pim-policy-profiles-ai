@@ -218,11 +218,6 @@
           "file_size": {
             "type": "integer",
             "nullable": true
-          },
-          "download_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Absolute URL that downloads the file (served by this app, requires no API key)."
           }
         }
       },
@@ -550,7 +545,7 @@
     "/coach/query": {
       "post": {
         "summary": "Ask the AI Coach a question",
-        "description": "Retrieves the most relevant policy passages (BM25 full-text search over the indexed documents) and answers with the Posit mAI gateway. Returns the cited answer plus the source chunks.",
+        "description": "Retrieves the most relevant policy passages (Databricks AI Search hybrid vector + keyword search over the indexed documents) and answers with the Posit mAI gateway. Returns the cited answer plus the source chunks.",
         "tags": [
           "AI Coach"
         ],

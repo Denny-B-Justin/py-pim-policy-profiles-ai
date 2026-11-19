@@ -293,10 +293,6 @@ def card_content(*children, cls: str = "", **props):
     return html.Div(_kids(children), className=cn("px-6", cls), **props)
 
 
-def card_footer(*children, cls: str = "", **props):
-    return html.Div(_kids(children), className=cn("flex items-center px-6 [.border-t]:pt-6", cls), **props)
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Misc primitives
 # ──────────────────────────────────────────────────────────────────────────────
@@ -343,10 +339,6 @@ def textarea(id=None, cls: str = "", **props):
     if id is not None:
         props["id"] = id
     return dcc.Textarea(className=cn(TEXTAREA_CLASS, cls), **props)
-
-
-def skeleton(cls: str = ""):
-    return html.Div(className=cn("bg-accent animate-pulse rounded-md", cls))
 
 
 def spinner(cls: str = "h-4 w-4"):
@@ -456,57 +448,6 @@ def th(*children, cls: str = "", **props):
 
 def td(*children, cls: str = "", **props):
     return html.Td(_kids(children), className=cn("p-2 align-middle whitespace-nowrap", cls), **props)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Tabs (components/ui/tabs.tsx) – pure-CSS/JS tabs driven by data-state attributes
-# ──────────────────────────────────────────────────────────────────────────────
-TABS_LIST = ("rounded-lg p-[3px] h-9 text-muted-foreground inline-flex w-fit items-center justify-center bg-muted "
-             "group/tabs-list")
-TABS_TRIGGER = (
-    "text-foreground/60 hover:text-foreground relative inline-flex h-[calc(100%-1px)] flex-1 items-center "
-    "justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap "
-    "transition-all focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none "
-    "disabled:opacity-50 [&_.lucide]:pointer-events-none [&_.lucide]:shrink-0 "
-    "[&_.lucide:not([class*='size-'])]:size-4 data-[state=active]:bg-background data-[state=active]:text-foreground "
-    "data-[state=active]:shadow-sm cursor-pointer"
-)
-
-
-def tabs_list(*children, cls: str = "", **props):
-    return html.Div(_kids(children), className=cn(TABS_LIST, cls), role="tablist", **props)
-
-
-def tabs_trigger(*children, active: bool = False, cls: str = "", **props):
-    return html.Button(_kids(children), className=cn(TABS_TRIGGER, cls), type="button", role="tab",
-                       **{"data-state": "active" if active else "inactive"}, **props)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Small layout helpers shared by pages
-# ──────────────────────────────────────────────────────────────────────────────
-def page_heading(title: str, subtitle: str | None = None, *, cls: str = "", right=None):
-    head = html.Div([
-        html.H1(title, className="text-2xl font-bold tracking-tight"),
-        html.P(subtitle, className="text-sm text-muted-foreground mt-1") if subtitle else None,
-    ])
-    if right is None:
-        return html.Div(head, className=cls)
-    return html.Div([head, right], className=cn("flex items-start justify-between gap-4", cls))
-
-
-def alert_box(message, kind: str = "error", cls: str = ""):
-    palette = {
-        "error": "border-red-200 bg-red-50 text-red-700",
-        "warn": "border-amber-200 bg-amber-50 text-amber-800",
-        "info": "border-blue-200 bg-blue-50 text-blue-700",
-        "success": "border-emerald-200 bg-emerald-50 text-emerald-700",
-    }[kind]
-    return html.Div(message, className=cn("rounded-md border px-3 py-2 text-sm", palette, cls))
-
-
-def empty_state(message: str, cls: str = ""):
-    return html.Div(message, className=cn("text-center py-12 text-sm text-muted-foreground", cls))
 
 
 # ──────────────────────────────────────────────────────────────────────────────

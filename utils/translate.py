@@ -2,7 +2,6 @@
 Translation through the mAI gateway (replaces DeepL: `web/lib/deepl.ts`, `rag` query translation).
 
 * `translate_query()`   – short text (a retrieval query) → another language; None on failure.
-* `estimate_characters()` – size shown in the “Translate with AI” confirmation dialog.
 * `translate_document_to_english()` – text of the original document is extracted, translated in
   ~6 000-character paragraph-aligned chunks (a few in parallel) and returned as a .docx file.
   DeepL kept the source layout; a language model cannot, so the result is a clean text document
@@ -45,10 +44,6 @@ def translate_query(text: str, language: str) -> str | None:
     except Exception:  # noqa: BLE001
         log.warning("Query translation to %s failed", language, exc_info=True)
         return None
-
-
-def estimate_characters(data: bytes, file_name: str | None) -> int:
-    return len(extract.extract_text(data, file_name))
 
 
 def split_chunks(text: str, limit: int | None = None) -> list[str]:

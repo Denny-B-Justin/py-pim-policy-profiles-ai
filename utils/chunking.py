@@ -1,5 +1,5 @@
 """
-Section-aware chunking for the search index (new uploads, re-index, reconcile).
+Section-aware chunking for the search index (run on every upload).
 
 Pure Python (only `re`, `json`, `hashlib`): no app imports, no Databricks imports.  Bump CHUNKER_VERSION whenever the output can change; the
 version is stored on every row of `policy_repo_document_chunks` and in `policy_repo_document_ingest_log`.

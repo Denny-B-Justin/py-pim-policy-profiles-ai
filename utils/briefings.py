@@ -153,7 +153,7 @@ def generate(job_id: str, key: str, iso3: str, lang: str, scope: str, repo_url: 
         search = [translated, base_query] if translated else base_query
     retrieval_error = None
     try:
-        docs = rag.retrieve(search, filters=filters, k=C.BRIEFING_RETRIEVER_K, pad_to_k=True)
+        docs = rag.retrieve(search, filters=filters, k=C.BRIEFING_RETRIEVER_K)
     except Exception as exc:  # noqa: BLE001 - the original falls back to “no indexed documents”
         log.exception("briefing retrieval failed")
         docs, retrieval_error = [], type(exc).__name__

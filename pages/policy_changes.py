@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
-from dash import Input, Output, State, ctx, dcc, html, no_update
+from dash import Input, Output, State, dcc, html, no_update
 
 from pages.pages_constants import (
     POLICY_CHANGES_TITLE as TITLE,
@@ -24,7 +24,7 @@ from utils.icons import icon
 from utils.ratelimit import rate_limit
 from utils.routes import href
 from utils.toast import toast
-from utils.ui import button, cn, link, select, spinner, text_input
+from utils.ui import button, cn, link, select, spinner
 
 _DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _SHOW, _HIDE = {"display": "inline-block"}, {"display": "none"}

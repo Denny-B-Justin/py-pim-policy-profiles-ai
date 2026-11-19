@@ -22,7 +22,7 @@ from utils.audit import log_audit
 from utils.components import fmt_size
 from utils.icons import icon
 from utils.record_schema import validate_record
-from utils.routes import api_url, href
+from utils.routes import href
 from utils.toast import toast
 from utils.ui import (badge, button, cn, combobox, label, select, separator, text_input, textarea)
 
@@ -88,8 +88,6 @@ def attachment_slot(lang_type: str, doc: dict | None):
             file_type_badge(doc.get("file_name")),
             html.Span(fmt_size(doc.get("file_size")), className="text-[10px] text-muted-foreground hidden sm:inline")
             if fmt_size(doc.get("file_size")) else None,
-            html.A(_icon_btn(icon("external-link", "h-3 w-3"), title="Open file"),
-                   href=api_url(f"/api/download/{doc['id']}"), target="_blank", rel="noopener noreferrer"),
             dcc.Upload(_icon_btn(icon("refresh-cw", "h-3 w-3"), title="Replace file"), id=upl_id, multiple=False,
                        accept=".pdf,.doc,.docx,.txt", max_size=C.MAX_UPLOAD_BYTES, className="inline-flex shrink-0"),
             _icon_btn(icon("trash-2", "h-3 w-3"), title="Remove attachment", id={"type": "rf-att-del", "id": doc["id"]},
@@ -333,8 +331,6 @@ def register_callbacks(app) -> None:
              status, machine, sup_link, sup_note, overview, comment, link):
         if not n:
             raise PreventUpdate
-        no_errs = [""] * len(ERR_FIELDS)
-
         def out(errors: dict | None = None, search=no_update, msg=no_update):
             e = [(errors or {}).get(f, "") for f in ERR_FIELDS]
             return (*e, search, msg)

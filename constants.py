@@ -9,7 +9,7 @@ Sections
 --------
 1. Branding / app metadata, web server + session
 2. Databricks (Azure) Unity Catalog connection  ->  prd_mega.sgpbpi163
-3. Unity Catalog table + volume names (what to call the tables when migrating), local paths
+3. Unity Catalog table + volume names, local paths
 4. mAI gateway (only TWO environment variables are required)
 5. Taxonomy (policy tiers, strategy types, jurisdictions, ...)
 6. Limits / tuning knobs
@@ -89,9 +89,7 @@ SQLITE_PATH = _env("PIM_SQLITE_PATH", str(BASE_DIR / ".local" / "demo.sqlite"))
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. Unity Catalog objects
 # ─────────────────────────────────────────────────────────────────────────────
-# Ideal table names (the prefix keeps them easy to find in a shared schema).
-# These are the names to use when migrating the Neon/Postgres tables — the
-# mapping from the original Postgres table is in docs/DATABRICKS_MIGRATION.md.
+# Table names (the prefix keeps them easy to find in a shared schema).
 TABLE_PREFIX = "policy_repo_"
 TABLES: dict[str, str] = {
     "countries": f"{TABLE_PREFIX}countries",                        # was  countries
@@ -112,24 +110,14 @@ TABLES: dict[str, str] = {
 # Partner API (/api/v1/*) needs the partner_api_keys table, which does not exist yet → off by default.
 PARTNER_API_ENABLED = _env("PIM_PARTNER_API", "0") in ("1", "true", "True")
 
-# Unity Catalog Volume + folder holding the app's files (replaces Vercel Blob):
-#   <FILES_ROOT>/documents/country-files/         the policy document repository (PDF / DOCX / XLSX / TXT) + _manifest.json:
-#       <ISO3>_<Country>/<National|Subnational_<entity>|Supranational>/<Year>/<Tier>/<ENG|ORI_<language>>/
-#       <id8>_<file name>   +  _manifest.json  (document id → path; written by scripts/copy_documents_to_volume.py)
+# Unity Catalog Volume folder the app uploads documents into (write-only: the app never reads files back):
+#   <FILES_ROOT>/documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/<id8>_<file name>
 UC_VOLUME = _env("DATABRICKS_VOLUME", "vgpbpi163")
 UC_VOLUME_ROOT = f"/Volumes/{DATABRICKS_CATALOG}/{DATABRICKS_SCHEMA}/{UC_VOLUME}"
 FILES_FOLDER = _env("PIM_FILES_FOLDER", "PIMPAM-AI/policy-profiles/upload-files").strip("/")
 FILES_ROOT = f"{UC_VOLUME_ROOT}/{FILES_FOLDER}"
-DOCUMENTS_DIR = _env("PIM_DOCUMENTS_FOLDER", "documents/country-files").strip("/")
-CHUNKS_DIR = "chunks"                         # legacy JSON chunk files (v1) – no longer read or written
-# Index of the repository: {document id: path relative to DOCUMENTS_DIR}.  Documents uploaded through the app
-# instead record their full path in the documents row (`blob_url`).
-DOCUMENT_MANIFEST = "_manifest.json"
-DOCUMENT_MANIFEST_SECONDS = 300               # how long a process keeps the manifest before re-reading it
-# Local staging folder of scripts/copy_documents_to_volume.py – its contents are uploaded by hand into
-# <FILES_ROOT>/<DOCUMENTS_DIR>/.  Never deployed or committed (.gitignore).
-TRANSFER_DIR = Path(_env("PIM_TRANSFER_DIR", str(BASE_DIR / "files-to-transfer")))
-# Local folder used instead of the volume when PIM_DB_BACKEND=sqlite (same documents/ + chunks/ layout)
+DOCUMENTS_DIR = _env("PIM_DOCUMENTS_FOLDER", "documents/upload-documents").strip("/")
+# Local folder used instead of the volume when PIM_DB_BACKEND=sqlite (same documents/ layout)
 LOCAL_STORAGE_DIR = Path(_env("PIM_LOCAL_STORAGE", str(BASE_DIR / ".local" / "files")))
 
 # Bundled files
@@ -373,7 +361,6 @@ NATIVE_LANGUAGES = [
 # 6. Limits / tuning
 # ─────────────────────────────────────────────────────────────────────────────
 MAX_UPLOAD_BYTES = 250 * 1024 * 1024          # per attached document
-MAX_ZIP_BYTES = 250 * 1024 * 1024             # "download all documents" zip
 MAX_BATCH_SHEET_BYTES = 5 * 1024 * 1024       # batch upload spreadsheet
 ALLOWED_DOC_EXTENSIONS = (".pdf", ".doc", ".docx", ".txt")
 PAGE_SIZE = 20                                # repository table page size
@@ -407,24 +394,19 @@ EXTRACT_MAX_DETECT_BYTES = 40 * 1024 * 1024
 # Chunk sizes live in utils/chunking.py (); these two are
 # informational copies for the statistics pages.
 CHUNK_SIZE = 1000
-CHUNK_PARENT_CHARS = max(CHUNK_SIZE * 2, 1800)   # 2000
 
-# Retrieval backend:
-#   "ai_search"  Databricks AI Search (formerly Vector Search) Delta Sync index over policy_repo_document_chunks –
-#                hybrid (vector + keyword) search, embeddings computed by Databricks.  Production default.
-#   "bm25"       in-process BM25 (SQLite FTS5) over the same chunks table – no index needed.  Used for the local
-#                SQLite demo, before the index exists, and as the automatic fallback when AI Search fails.
-SEARCH_BACKEND = _env("PIM_SEARCH_BACKEND", "bm25" if DB_BACKEND == "sqlite" else "ai_search").lower()
+# Retrieval: Databricks AI Search (formerly Vector Search) Delta Sync index over policy_repo_document_chunks –
+# hybrid (vector + keyword) search, embeddings computed by Databricks.  "ai_search" is the only backend; any other
+# value switches document search off.  Not available in the local SQLite preview.
+SEARCH_BACKEND = _env("PIM_SEARCH_BACKEND", "ai_search").lower()
 AI_SEARCH_ENDPOINT = _env("PIM_AI_SEARCH_ENDPOINT", "pim_policy_profiles_ai_search")
 AI_SEARCH_INDEX = _env("PIM_AI_SEARCH_INDEX",
                        f"{DATABRICKS_CATALOG}.{DATABRICKS_SCHEMA}.{TABLES['document_chunks']}_index")
 AI_SEARCH_EMBEDDING_MODEL = _env("PIM_AI_SEARCH_EMBEDDING_MODEL", "databricks-qwen3-embedding-0-6b")  # informational
 AI_SEARCH_QUERY_TYPE = _env("PIM_AI_SEARCH_QUERY_TYPE", "HYBRID").upper()       # HYBRID | ANN
 AI_SEARCH_RERANK = _env("PIM_AI_SEARCH_RERANK", "0") in ("1", "true", "True")   # Databricks reranker (extra latency)
-AI_SEARCH_FALLBACK_BM25 = _env("PIM_AI_SEARCH_FALLBACK", "1") in ("1", "true", "True")
 AI_SEARCH_SYNC_ON_WRITE = _env("PIM_AI_SEARCH_SYNC", "1") in ("1", "true", "True")  # trigger a sync after uploads
 AI_SEARCH_SYNC_DEBOUNCE_SECONDS = _env_int("PIM_AI_SEARCH_SYNC_DEBOUNCE", 20)
-AI_SEARCH_TIMEOUT_SECONDS = _env_int("PIM_AI_SEARCH_TIMEOUT", 30)
 CHUNK_WRITE_BATCH = 100                       # chunk rows per MERGE statement (one JSON parameter per batch)
 RETRIEVER_K = 6
 BRIEFING_RETRIEVER_K = 20
@@ -440,8 +422,7 @@ API_KEY_RANDOM_HEX_CHARS = 32                 # 128 bits of entropy
 
 SECRET_KEY = _env("PIM_SECRET_KEY", "") or _env("FLASK_SECRET_KEY", "")
 EXPORT_ALLOWED_ORIGINS = _env("EXPORT_ALLOWED_ORIGINS")   # comma-separated CORS origins for GET /api/export/documents (default: any)
-CRON_SECRET = _env("CRON_SECRET")               # optional bearer token for GET /api/imf-pima/refresh and /api/rag-sync/reconcile
-RAG_ADMIN_KEY = _env("RAG_ADMIN_KEY")           # optional extra key for ?page=raging (the original's “Admin API Key” field); unset = sign-in only
+CRON_SECRET = _env("CRON_SECRET")               # optional bearer token for GET /api/imf-pima/refresh
 ADMIN_INVITE_CODE = _env("ADMIN_INVITE_CODE")   # required for registration after the first account (same name as the Next.js app)
 IMF_PIMA_BASE = "https://infrastructuregovern.imf.org"
 IMF_PIMA_LIST_URL = f"{IMF_PIMA_BASE}/content/PIMA/Home/Region-and-Country-Information.html"

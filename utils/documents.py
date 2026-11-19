@@ -1,9 +1,9 @@
 """
 Document service: the one place that stores / replaces / removes a record's files.
 
-Used by the upload callbacks, the “Translate to English” job and the batch importer.
-Ports `app/api/documents/{upload,save,[id]}`, `modules/documents/queries.ts` and the `after(() => syncDocumentToRag…)`
-hooks: after every change the search index is updated in a background thread.
+Used by the upload callbacks and the batch importer.  An upload does two things in parallel with the same bytes:
+    1. stores the file in the UC volume (utils/storage.py – upload only, never read back)
+    2. chunks it in the app and writes the chunks to the chunks table, then requests an index sync (utils/indexer.py)
 """
 
 from __future__ import annotations
@@ -56,41 +56,37 @@ def attach_document(record_id: str, lang_type: str, file_name: str, data: bytes,
         raise DocumentError("Record not found.")
     if lang_type == "ENG":
         lang_code, lang_label = lang_code or "en", lang_label or "English"
-    # the slot keeps its id on replacement; the file is filed in the repository by country / year / tier / language
+    # the slot keeps its id on replacement; the file is filed in the volume by country / national-subnational
     current = queries.get_slot_document(record_id, lang_type)
     doc_id = current["id"] if current else queries.db.uid()
     country_name = queries.country_name_map().get(rec["country"], rec["country"])
-    key = storage.repository_key(rec, country_name, doc_id, lang_type, lang_label, file_name)
-    size = storage.save(key, data)
+    key = storage.upload_key(rec, country_name, doc_id, file_name)
     if text_layer is ...:
         try:
             text_layer = extract.detect_text_layer(data, file_name)
         except Exception:  # noqa: BLE001 - best effort; leaves the flag unknown
             text_layer = None
     doc = queries.upsert_document(
-        doc_id, record_id, lang_type, key, lang_code=lang_code, lang_label=lang_label, file_name=file_name, file_size=size,
-        translation_source=translation_source if is_translation_source(translation_source) else None,
+        doc_id, record_id, lang_type, key, lang_code=lang_code, lang_label=lang_label, file_name=file_name,
+        file_size=len(data), translation_source=translation_source if is_translation_source(translation_source) else None,
         text_layer=text_layer)
-    replaced = doc.pop("_replaced_path", None)
-    if replaced:
-        try:
-            storage.delete(replaced)
-        except Exception:  # noqa: BLE001
-            log.warning("could not delete replaced file %s", replaced, exc_info=True)
     queries.db.invalidate("")
+    # chunking runs in the background from these bytes while the file is uploaded to the volume
     if index:
-        jobs.run_background(indexer.index_document, doc["id"])
+        jobs.run_background(indexer.index_document, doc["id"], data)
+    try:
+        storage.save(key, data)
+    except Exception as exc:  # noqa: BLE001
+        log.exception("volume upload failed for %s", storage.location(key))
+        raise DocumentError("The file could not be uploaded to the document volume.") from exc
     return doc
 
 
 def remove_document(doc_id: str) -> dict | None:
+    """Remove a document row and its chunks (the uploaded file stays in the volume)."""
     doc = queries.delete_document(doc_id)
     if not doc:
         return None
-    try:
-        storage.delete(doc["file_path"])
-    except Exception:  # noqa: BLE001 - idempotent on “not found”
-        log.warning("file deletion failed: %s", doc["file_path"], exc_info=True)
     jobs.run_background(indexer.delete_document_chunks, doc)
     queries.db.invalidate("")
     return doc
@@ -104,40 +100,12 @@ def set_translation_source(doc_id: str, source: str | None) -> dict | None:
     return doc
 
 
-def translate_record_to_english(job_id: str, record_id: str, progress_fn=None) -> dict:
-    """Job body for “Translate to English”: original document → mAI translation → ENG slot (provenance `mai`)."""
-    from utils import translate  # local import keeps module import light
-
-    rec = queries.get_record_with_docs(record_id)
-    if not rec:
-        raise DocumentError("Record not found")
-    ori = next((d for d in rec["documents"] if d["lang_type"] == "ORI"), None)
-    eng = next((d for d in rec["documents"] if d["lang_type"] == "ENG"), None)
-    if not ori:
-        raise DocumentError("This record has no original-language document to translate.")
-    if not ori.get("file_path"):
-        raise DocumentError(storage.NOT_IN_REPOSITORY)
-    if eng:
-        raise DocumentError("This record already has an English document.")
-    data = storage.read(ori["file_path"])
-    out, name = translate.translate_document_to_english(
-        data, ori.get("file_name"), ori.get("lang_label"),
-        progress=lambda done, total: jobs.update(job_id, progress={"done": done, "total": total}))
-    attach_document(record_id, "ENG", name, out, lang_code="en", lang_label="English", translation_source="mai",
-                    text_layer=True)
-    return {"file_name": name}
-
-
 def delete_record(record_id: str) -> bool:
-    """Delete a record with its documents, stored files and search-index chunks."""
+    """Delete a record with its documents and search-index chunks (uploaded files stay in the volume)."""
     rec = queries.get_record(record_id)
     if not rec:
         return False
     for d in queries.delete_record(record_id):
-        try:
-            storage.delete(d["file_path"])
-        except Exception:  # noqa: BLE001
-            log.warning("file deletion failed: %s", d.get("file_path"), exc_info=True)
         indexer.delete_document_chunks(d)
     queries.db.invalidate("")
     from utils import rag  # noqa: PLC0415

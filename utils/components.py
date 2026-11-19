@@ -98,14 +98,6 @@ def translation_source_label(value: str | None) -> str | None:
     return next((s["label"] for s in C.TRANSLATION_SOURCES if s["value"] == value), value)
 
 
-def translation_source_badge(value: str | None, cls: str = ""):
-    label = translation_source_label(value)
-    if not label:
-        return None
-    return badge(label, variant="outline",
-                 cls=cn("text-[10px] px-1.5 py-0", C.TRANSLATION_SOURCE_BADGE.get(value, C.TRANSLATION_SOURCE_BADGE["other"]), cls))
-
-
 def fmt_num(n: float, decimals: int = 1) -> str:
     return f"{n:,.{decimals}f}"
 

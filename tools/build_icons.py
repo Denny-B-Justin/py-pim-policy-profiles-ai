@@ -13,7 +13,6 @@ Usage (only needed when you add a new icon; the generated CSS is committed):
 """
 from __future__ import annotations
 
-import base64  # noqa: F401  (kept for easy switch to base64 data URIs)
 import re
 import sys
 import urllib.parse

@@ -68,7 +68,7 @@ SCHEMA: dict[str, dict] = {
             ("lang_label", "STRING"),
             ("translation_source", "STRING"),
             ("text_layer", "BOOLEAN"),
-            ("blob_url", "STRING"),                      # old Vercel Blob link (migrated rows) / volume path (new uploads) – informational
+            ("blob_url", "STRING"),                      # volume path the upload was written to – informational
             ("file_name", "STRING"),
             ("file_size", "INT"),
             ("uploaded_at", "TIMESTAMP NOT NULL"),
@@ -196,8 +196,8 @@ SCHEMA: dict[str, dict] = {
         "fks": [("iso3", "countries", "iso3")],
     },
     # ── search index ────────────────────────────────────────────────────────
-    # Source table of the Databricks AI Search Delta Sync index.  Written by utils/rag.py (uploads, re-index,
-    # reconcile) with the chunker in utils/chunking.py.  Column types are those AI Search can sync and filter on (INT, not SMALLINT).
+    # Source table of the Databricks AI Search Delta Sync index.  Written by utils/indexer.py at upload time
+    # with the chunker in utils/chunking.py.  Column types are those AI Search can sync and filter on (INT, not SMALLINT).
     # Change Data Feed must stay on: the index syncs from it.
     "document_chunks": {
         "comment": "Search-index chunks of the policy documents (one row per chunk). Source of the AI Search index "
@@ -249,7 +249,7 @@ SCHEMA: dict[str, dict] = {
             ("detail", "STRING"),
             ("chunk_count", "INT"),
             ("chunker_version", "STRING"),
-            ("source", "STRING"),                        # app_upload | app_reindex | app_reconcile
+            ("source", "STRING"),                        # app_upload
             ("processed_at", "TIMESTAMP NOT NULL"),
         ],
         "pk": ["document_id"],

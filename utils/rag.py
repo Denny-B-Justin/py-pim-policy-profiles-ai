@@ -2,7 +2,7 @@
 Retrieval for the AI Coach and the country briefings, plus the index statistics.
 
 Search runs on **Databricks AI Search** only: a Delta Sync index over the Delta table
-`policy_repo_document_chunks` (written by utils/indexer.py and the one-time backfill notebook), with
+`policy_repo_document_chunks` (written by utils/indexer.py when documents are uploaded), with
 Databricks-computed embeddings (multilingual `databricks-qwen3-embedding-0-6b`), queried in HYBRID mode
 (vector similarity + keyword) – see utils/ai_search.py.  There is no in-process fallback: with 245k chunks a
 local keyword index would have to load the whole table into every app process.
@@ -59,12 +59,10 @@ def _merge_query_results(result_lists: list[list[dict]], k: int) -> list[dict]:
     return merged
 
 
-def retrieve(query: str | list[str], filters: dict | None = None, k: int | None = None,
-             pad_to_k: bool = False) -> list[dict]:
+def retrieve(query: str | list[str], filters: dict | None = None, k: int | None = None) -> list[dict]:
     """Top-k chunks → [{"content": str, "metadata": {...}}] via Databricks AI Search.
 
     query     one string, or several (e.g. a translated + the English briefing query) – results are merged
-    pad_to_k  accepted for the briefings; AI Search already returns up to k nearest chunks.
     Raises ai_search.AISearchError (with a readable message) when search is off or the query fails; the
     reason – including missing permissions – is logged by utils/ai_search.py.
     """
