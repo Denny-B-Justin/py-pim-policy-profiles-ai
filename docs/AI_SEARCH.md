@@ -42,7 +42,6 @@ Why this shape:
 | **Record fields copied onto each chunk** | AI Search can only filter on columns of the index. When a record is edited the app rewrites its chunks' fields (`indexer.sync_record_metadata`). |
 | **TRIGGERED sync, STANDARD endpoint** | No always-on streaming pipeline; the app asks for a sync after uploads (debounced). A STANDARD endpoint gives low latency and fits a corpus of a few thousand documents. |
 | **~2,000-character section-aware chunks with a context header** | The passage the LLM reads is the passage that was embedded; `embedding_text` adds "Country / Document / Year / Section" so a question naming a law or article finds it. |
-| **BM25 fallback over the same table** | The app keeps working before ITS has approved the endpoint (`PIM_SEARCH_BACKEND=bm25`) and if an AI Search call fails. |
 
 Alternatives considered: *Direct Vector Access index* (the app would have to compute and upsert vectors – no embedding API available to it); *self-managed embeddings column* (same problem); *parent/child chunks* as in the original service (more tables and a lookup per query for a small gain once hybrid search and a context header are used – can be added later without changing the app's interface); *storage-optimized endpoint* (cheaper per vector at large scale, but TRIGGERED-only with partial rebuilds and a different filter syntax – not needed at this size).
 

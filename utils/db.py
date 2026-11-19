@@ -18,7 +18,6 @@ import sqlite3
 import threading
 import time
 import uuid
-from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
@@ -212,13 +211,6 @@ def update(logical_table: str, row_id: str, values: dict, id_col: str = "id") ->
 def delete(logical_table: str, row_id: str, id_col: str = "id") -> None:
     execute(f"DELETE FROM {table(logical_table)} WHERE {id_col} = :row_id", {"row_id": row_id})
     invalidate(logical_table)
-
-
-@contextmanager
-def timed(label: str):
-    t0 = time.perf_counter()
-    yield
-    log.debug("%s took %.0f ms", label, (time.perf_counter() - t0) * 1000)
 
 
 # ── value coercion shared by the query layer ─────────────────────────────────

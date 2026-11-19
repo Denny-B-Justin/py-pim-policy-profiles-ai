@@ -14,7 +14,6 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-import constants as C
 from utils import db, storage
 from utils.db import table, to_bool, to_dt, to_int
 
@@ -112,11 +111,6 @@ def update_record(record_id: str, data: dict) -> dict | None:
     return get_record(record_id)
 
 
-def get_record_country(record_id: str) -> str | None:
-    rows = db.query(f"SELECT country FROM {table('policy_records')} WHERE id = :id", {"id": record_id})
-    return rows[0]["country"] if rows else None
-
-
 def set_link_status(record_id: str, link_ok: int | None, checked_at: datetime | None,
                     last_ok_at: datetime | None | str = "keep") -> None:
     values: dict[str, Any] = {"link_ok": link_ok, "link_checked_at": checked_at}
@@ -163,11 +157,6 @@ def v1_list_records(where: list[str], params: dict, limit: int, offset: int) -> 
 
 def country_name_map() -> dict[str, str]:
     return {c["iso3"]: c["name"] for c in list_all_countries()}
-
-
-def get_country(iso3: str) -> dict | None:
-    rows = db.query(f"SELECT * FROM {table('countries')} WHERE iso3 = :i", {"i": iso3.upper()})
-    return rows[0] if rows else None
 
 
 def list_countries() -> list[dict]:
@@ -305,12 +294,6 @@ def get_country_policies(iso3: str) -> list[dict]:
     return _attach_docs(rows)
 
 
-def get_records_with_docs_by_country(iso3: str) -> list[dict]:
-    rows = [_rec(r) for r in db.query(
-        f"SELECT * FROM {table('policy_records')} WHERE country = :c ORDER BY LOWER(name_eng) ASC", {"c": iso3})]
-    return [x for x in _attach_docs(rows) if x["docs"]]
-
-
 def export_all_records_with_docs() -> list[dict]:
     names = country_name_map()
     recs = [_rec(r) for r in db.query(f"SELECT * FROM {table('policy_records')} ORDER BY country ASC, "
@@ -368,14 +351,6 @@ def upsert_document(doc_id: str, record_id: str, lang_type: str, key: str, lang_
 def get_document(doc_id: str) -> dict | None:
     rows = db.query(f"SELECT * FROM {table('documents')} WHERE id = :i", {"i": doc_id})
     return _doc(rows[0]) if rows else None
-
-
-def set_document_text_layer(doc_id: str, text_layer: bool | None) -> dict | None:
-    db.update("documents", doc_id, {"text_layer": text_layer})
-    doc = get_document(doc_id)
-    if doc:
-        recompute_machine_readable(doc["record_id"])
-    return doc
 
 
 def update_document_source(doc_id: str, translation_source: str | None) -> dict | None:

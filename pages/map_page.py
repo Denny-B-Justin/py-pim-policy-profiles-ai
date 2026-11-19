@@ -11,8 +11,6 @@ from dash import Input, Output, State, dcc, html
 
 from pages.pages_constants import (
     MAP_TITLE as TITLE,
-    MAP_COLORS as COLORS,
-    MAP_NO_DATA_FILL as NO_DATA_FILL,
     MAP_LEGEND as LEGEND,
     MAP_TILES as TILES,
 )

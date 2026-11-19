@@ -331,8 +331,6 @@ def register_callbacks(app) -> None:
              status, machine, sup_link, sup_note, overview, comment, link):
         if not n:
             raise PreventUpdate
-        no_errs = [""] * len(ERR_FIELDS)
-
         def out(errors: dict | None = None, search=no_update, msg=no_update):
             e = [(errors or {}).get(f, "") for f in ERR_FIELDS]
             return (*e, search, msg)

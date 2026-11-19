@@ -7,7 +7,7 @@ Databricks AI Search Delta Sync index (utils/ai_search.py).
     upload / replace  → index_document()          the uploaded bytes (in memory, never read back from the volume)
                                                    → extract → chunk (utils/chunking.py) → MERGE rows → delete the
                                                    document's surplus rows → ingest log → request an index sync
-    delete            → delete_document_chunks()   / delete_chunks(record_id)
+    delete            → delete_document_chunks()
     record edited     → sync_record_metadata()     rewrites the record fields copied onto its chunks
 
 Write semantics: rows are upserted by `chunk_id` (= `<document_id>:<chunk_index>`) and only rewritten when their
@@ -114,20 +114,6 @@ def _log(doc: dict, status: str, detail: str | None, chunk_count: int, source: s
 
 
 # ── public API (unchanged signatures) ────────────────────────────────────────
-def delete_chunks(record_id: str, lang_type: str | None = None) -> None:
-    """Remove the index rows of a record (optionally only its ENG or ORI document)."""
-    where, params = "record_id = :r", {"r": record_id}
-    if lang_type:
-        where += " AND lang_type = :l"
-        params["l"] = lang_type
-    _delete_rows(where, params)
-    try:
-        db.execute(f"DELETE FROM {table(_LOG)} WHERE {where}", params)
-    except Exception:  # noqa: BLE001
-        log.warning("ingest log cleanup failed for record %s", record_id, exc_info=True)
-    _after_write()
-
-
 def delete_document_chunks(doc: dict) -> None:
     _delete_rows("document_id = :d", {"d": doc["id"]})
     try:

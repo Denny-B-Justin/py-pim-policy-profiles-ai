@@ -50,11 +50,6 @@ def _local_path(key: str, area: str) -> Path:
     return C.LOCAL_STORAGE_DIR / area / key.lstrip("/")
 
 
-def safe_name(name: str | None) -> str:
-    base = (name or "document").strip().replace("\\", "/").split("/")[-1]
-    return re.sub(r"[^A-Za-z0-9._-]", "_", base)[:120] or "document"
-
-
 # ── upload layout ────────────────────────────────────────────────────────────
 def _segment(text: str | None, limit: int, fallback: str) -> str:
     """One folder / file-name part: letters, digits, '.', '-' and '_' only (safe in volumes and on Windows)."""

@@ -12,7 +12,7 @@ import secrets
 from datetime import timedelta
 
 import dash
-from dash import Input, Output, dcc, html
+from dash import Input, Output
 
 import constants as C
 from pages import load, load_all

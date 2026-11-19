@@ -9,7 +9,7 @@ from dash import dcc, html
 import constants as C
 from utils.icons import icon
 from utils.routes import asset, href
-from utils.ui import cn, link, separator
+from utils.ui import link, separator
 
 # (page, label, short_label, icon) — identical order to PRIMARY_NAV / SECONDARY_NAV in layout.tsx
 PRIMARY_NAV = [

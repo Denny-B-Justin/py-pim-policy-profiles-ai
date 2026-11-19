@@ -18,7 +18,7 @@ from utils.icons import icon
 from utils.routes import href
 from utils.toast import toast
 from utils.ui import (DIALOG_HIDE, DIALOG_SHOW, badge, button, button_class, cn, dialog, dialog_description,
-                      dialog_footer, dialog_header, dialog_title, link, select, spinner, table, tbody, td, text_input,
+                      dialog_footer, dialog_header, dialog_title, link, select, table, tbody, td, text_input,
                       th, thead, tr)
 from utils.widgets import recheck_links_widget
 

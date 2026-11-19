@@ -110,7 +110,7 @@ python app.py                           # demo login: demo-user@example.org / lo
 | Google sign-in (Auth.js) | Posit Connect identity, or local e-mail + password accounts (first account bootstraps; later ones need `ADMIN_INVITE_CODE`) |
 | Recharts | Plotly |
 | Tailwind typography plugin (never installed in the original) | equivalent `.md-prose` styles for briefings |
-| Statistics "Vector Database Analytics" | renamed "Search Index Analytics" (shows the BM25 engine) |
+| Statistics "Vector Database Analytics" | renamed "Search Index Analytics" (shows the AI Search engine) |
 | REST POST / PATCH / DELETE for records | Dash callbacks (no write endpoints; the read/export/partner API is unchanged) |
 
 ## Limits and notes

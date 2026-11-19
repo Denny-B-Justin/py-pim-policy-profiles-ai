@@ -24,7 +24,7 @@ from urllib.parse import unquote, urljoin, urlparse
 import requests
 
 import constants as C
-from utils import db, documents, extract, indexer, mai_client, queries, translate
+from utils import db, documents, indexer, mai_client, queries, translate
 from utils.audit import log_audit
 from utils.check_link import assert_public_host
 from utils.db import table
@@ -287,7 +287,7 @@ def parse_and_store(data: bytes, file_name: str, auto_translate: bool, conflict_
     if not data_rows:
         raise BatchError("No data rows found (did you fill in the Policies sheet and remove the example rows?).")
 
-    rows, preview = [], []
+    rows = []
     for r in data_rows:
         v = r["values"]
         status, action, record_id = "pending", "create", None
@@ -526,10 +526,6 @@ import threading  # noqa: E402
 
 _active: set[str] = set()
 _active_lock = threading.Lock()
-
-
-def is_running(batch_id: str) -> bool:
-    return batch_id in _active
 
 
 def run_batch(job_id: str, batch_id: str) -> dict:

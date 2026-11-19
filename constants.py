@@ -394,24 +394,19 @@ EXTRACT_MAX_DETECT_BYTES = 40 * 1024 * 1024
 # Chunk sizes live in utils/chunking.py (); these two are
 # informational copies for the statistics pages.
 CHUNK_SIZE = 1000
-CHUNK_PARENT_CHARS = max(CHUNK_SIZE * 2, 1800)   # 2000
 
-# Retrieval backend:
-#   "ai_search"  Databricks AI Search (formerly Vector Search) Delta Sync index over policy_repo_document_chunks –
-#                hybrid (vector + keyword) search, embeddings computed by Databricks.  Production default.
-#   "bm25"       in-process BM25 (SQLite FTS5) over the same chunks table – no index needed.  Used for the local
-#                SQLite demo, before the index exists, and as the automatic fallback when AI Search fails.
-SEARCH_BACKEND = _env("PIM_SEARCH_BACKEND", "bm25" if DB_BACKEND == "sqlite" else "ai_search").lower()
+# Retrieval: Databricks AI Search (formerly Vector Search) Delta Sync index over policy_repo_document_chunks –
+# hybrid (vector + keyword) search, embeddings computed by Databricks.  "ai_search" is the only backend; any other
+# value switches document search off.  Not available in the local SQLite preview.
+SEARCH_BACKEND = _env("PIM_SEARCH_BACKEND", "ai_search").lower()
 AI_SEARCH_ENDPOINT = _env("PIM_AI_SEARCH_ENDPOINT", "pim_policy_profiles_ai_search")
 AI_SEARCH_INDEX = _env("PIM_AI_SEARCH_INDEX",
                        f"{DATABRICKS_CATALOG}.{DATABRICKS_SCHEMA}.{TABLES['document_chunks']}_index")
 AI_SEARCH_EMBEDDING_MODEL = _env("PIM_AI_SEARCH_EMBEDDING_MODEL", "databricks-qwen3-embedding-0-6b")  # informational
 AI_SEARCH_QUERY_TYPE = _env("PIM_AI_SEARCH_QUERY_TYPE", "HYBRID").upper()       # HYBRID | ANN
 AI_SEARCH_RERANK = _env("PIM_AI_SEARCH_RERANK", "0") in ("1", "true", "True")   # Databricks reranker (extra latency)
-AI_SEARCH_FALLBACK_BM25 = _env("PIM_AI_SEARCH_FALLBACK", "1") in ("1", "true", "True")
 AI_SEARCH_SYNC_ON_WRITE = _env("PIM_AI_SEARCH_SYNC", "1") in ("1", "true", "True")  # trigger a sync after uploads
 AI_SEARCH_SYNC_DEBOUNCE_SECONDS = _env_int("PIM_AI_SEARCH_SYNC_DEBOUNCE", 20)
-AI_SEARCH_TIMEOUT_SECONDS = _env_int("PIM_AI_SEARCH_TIMEOUT", 30)
 CHUNK_WRITE_BATCH = 100                       # chunk rows per MERGE statement (one JSON parameter per batch)
 RETRIEVER_K = 6
 BRIEFING_RETRIEVER_K = 20

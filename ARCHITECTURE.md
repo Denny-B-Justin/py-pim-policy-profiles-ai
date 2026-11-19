@@ -46,7 +46,7 @@
                                    │             └── Flask routes (utils/api_routes.py)
                                    │                                              │
                                    │  per-process memory:                         │
-                                   │   • TTL query cache      • BM25 (FTS5) index │
+                                   │   • TTL query cache                           │
                                    │   • rate limiters        • job thread pool   │
                                    │  local temp files: job progress (JSON)       │
                                    └───────┬───────────────────────┬──────────────┘
@@ -71,7 +71,7 @@ Design rules that explain most of the code:
 * **One source of truth: Databricks.** The app process is disposable. Anything in memory or in the temp folder can be recreated from the tables and the volume.
 * **Pages are query-string routes.** `/?page=record&id=<uuid>` rather than `/record/<uuid>`; the home page is `/` or `/?page=home`.
 * **Reads are plain SQL, cached for a minute.** Writes are Dash callbacks guarded by sign-in and a rate limit, and each write also refreshes whatever depends on it (search index, link status, caches).
-* **No streaming, no embeddings.** The mAI gateway offers neither, so long AI work is a background job that the page polls, and retrieval is keyword (BM25) search.
+* **No streaming.** The mAI gateway cannot stream, so long AI work is a background job that the page polls. Embeddings are computed by Databricks AI Search, not by the gateway.
 * **No secrets in code.** Databricks credentials and mAI settings come from environment variables; the app never sends an `Authorization` header to mAI.
 
 ---
@@ -93,7 +93,7 @@ Design rules that explain most of the code:
 | Batch-upload jobs and their rows | `policy_repo_batch_imports`, `policy_repo_batch_import_rows` | batch upload | batch upload page | **Yes** |
 | Taxonomy, labels, languages, limits, prompts | Python source: `constants.py`, `pages/pages_constants.py`, `utils/prompts.py` | developers | everywhere | In the code (redeploy to change) |
 | Static reference files | `data/countries.json`, `data/imf-pima-references.json`, `data/openapi.json`, `data/release_notes.json`; `assets/` (CSS, JS, map polygons, templates, fonts) | developers | app | In the code |
-| TTL query cache, BM25 index, rate-limit counters, job thread pool | **process memory** | — | — | **No** — rebuilt on demand |
+| TTL query cache, rate-limit counters, job thread pool | **process memory** | — | — | **No** — rebuilt on demand |
 | Job progress files | temp folder (`PIM_JOBS_DIR`, default system temp) | `utils/jobs.py` | polling pages | No — deleted after 6 h anyway |
 | Session cookie of a local sign-in | browser cookie `pim_session` (signed with `PIM_SECRET_KEY`) | sign-in | every request | Until it expires (30 days) |
 | Secrets and endpoints | Connect environment variables (or `.env` locally) | administrator | `constants.py` | Stored by Connect |
@@ -171,7 +171,7 @@ utils/                      Everything the pages share
   documents.py              Attach / replace / delete a record's documents (upload + chunking in parallel)
   extract.py chunking.py    Text extraction (PDF/DOCX/TXT) and section-aware chunking
   indexer.py                Chunks uploaded bytes into policy_repo_document_chunks, deletes chunks, requests index syncs
-  rag.py                    BM25 retrieval over the chunk table (in-memory SQLite FTS5), index statistics
+  rag.py  ai_search.py      Retrieval through Databricks AI Search (hybrid query, filters, index sync), index statistics
   mai_client.py             The only place that talks to the mAI gateway (Claude Converse / OpenAI Responses / Gemini)
   prompts.py                System prompts for the Coach, briefings, translation, query rewriting
   chat.py  chat_ui.py       AI Coach: condense → retrieve → answer;  the chat widget
@@ -264,7 +264,7 @@ document from the downloaded original (→ 6.5). The app does not translate file
 `?page=coach`:
 1. The question starts a job (`chat.start`).
 2. If there is chat history, mAI rewrites the follow-up into a standalone question (`condense_question`).
-3. `rag.retrieve()` returns the **6 best passages** (BM25) for the standalone question, filtered by the user's selections on the page (country, policy tier, language, year range); archived records are excluded by default. The Coach needs no sign-in.
+3. `rag.retrieve()` returns the **6 best passages** (AI Search, hybrid) for the standalone question, filtered by the user's selections on the page (country, policy tier, language, year range); archived records are excluded by default. The Coach needs no sign-in.
 4. `prompts.build_chat_system()` puts those passages into a system prompt that asks for an answer grounded only in them, with numbered citations.
 5. One mAI call (`max 2,048` output tokens) produces the answer; the page shows it with the sources (first 300 characters of each passage, plus metadata linking to the record).
 6. If the question is about original-language documents (`lang_type = ORI`), the answer is requested in that language.
@@ -305,10 +305,9 @@ No AI. `utils/changes.py` reads `created_at` / `updated_at` of the country's rec
 * The gateway accepts calls **only from apps running on Posit Connect**. Locally you get 403 — use `PIM_MAI_MOCK=1` to preview the UI with canned answers.
 
 ### 7.2 Retrieval (`utils/rag.py`)
-* The chunk table is loaded into an **in-memory SQLite FTS5 table** (Porter stemming, Unicode folding, diacritics removed) with a side table of filter columns. Ranking is BM25. If FTS5 is missing from the host's SQLite, a pure-Python BM25 is used.
-* The index is **per process** and refreshed lazily: at most every 30 seconds the app asks the database for `(count, latest created_at, archived count)` of the chunk table and reloads only if it changed. Writes made by the same process invalidate it immediately.
+* Queries go to the **Databricks AI Search** Delta Sync index `policy_repo_document_chunks_index` in HYBRID mode (vector similarity + keyword), with embeddings computed by Databricks (multilingual model). Nothing is held in app memory.
 * Filters: `country`, `record_id`, `lang_type`, tiers, source, year range; archived records are excluded unless asked for.
-* Quality note: keyword search matches the *words* of the question, not their meaning. Questions phrased with the vocabulary of the documents work best; mixed-language corpora are searched per language slot (English and original-language documents are separate `lang_type` values).
+* New uploads become searchable after the index sync the app requests (see docs/AI_SEARCH.md).
 
 ### 7.3 Chunking (`utils/chunking.py`)
 Text is first split at legal headings (Chapter, Part, Title, Article, Section, §, numbered ALL-CAPS headings in several languages), then recursively at paragraph → line → sentence → word boundaries into ≈ 1,000-character pieces, which are packed into blocks of **≤ 2,000 characters**. Each block keeps its page number and section heading, which the Coach shows as the citation.
@@ -335,10 +334,9 @@ All instructions given to the model live here: Coach system prompt, condense pro
 
 | Mechanism | Purpose | Detail |
 |---|---|---|
-| **Job runner** (`utils/jobs.py`) | Anything slow: briefing generation, Coach answers, translation, batch import, re-index | A thread pool (`PIM_JOB_WORKERS`, default 6) runs the work; progress and result are written to `<PIM_JOBS_DIR>/<job-id>.json`; the page polls with `dcc.Interval` and shows a progress bar. Files older than 6 h are deleted. |
+| **Job runner** (`utils/jobs.py`) | Anything slow: briefing generation, Coach answers, translation, batch import | A thread pool (`PIM_JOB_WORKERS`, default 6) runs the work; progress and result are written to `<PIM_JOBS_DIR>/<job-id>.json`; the page polls with `dcc.Interval` and shows a progress bar. Files older than 6 h are deleted. |
 | **Fire-and-forget tasks** | Indexing after an upload, link checks, metadata sync | Same pool, errors are logged and never shown to the user. |
 | **Query cache** | Fewer SQL round trips | `db.cached(key, ttl)`; default 60 s (`PIM_CACHE_SECONDS`). Every write calls `db.invalidate()`, so the *same* process sees changes immediately; *other* processes within the TTL. |
-| **BM25 index** | Retrieval | See §7.2. |
 | **One DB connection per process** | | `utils/db.py` keeps a single connection guarded by a lock and reconnects once on transport errors, so SQL statements of one process run one after another. |
 | **Locks** | Batch import | A process-local lock stops two runs of the same batch from interleaving. It does not coordinate *between* processes — hence the recommendation of **Max processes = 1** on Connect. |
 
@@ -447,7 +445,6 @@ Two jobs are worth scheduling (they replace the Vercel cron jobs of the original
 Logs go to standard output (Connect → Logs); `LOG_LEVEL` sets the verbosity. Look for `search index built: N chunks`, `job … failed`, `mAI gateway error`, `DB call failed … reconnecting`. `GET /api/health` returns 200 when the app is up. `?page=statistics` shows chunks, documents and tokens per country/tier/year.
 
 ### 13.5 Sizing
-* Memory: the BM25 index holds all chunk text once per process (roughly the size of all extracted text).
 * First request after the SQL warehouse was idle is slow (cold start); later requests are served from cache for up to a minute.
 * Use **one Connect process** for this content (locks and the job runner are per process; job progress files are local to the server).
 
@@ -479,7 +476,7 @@ Logs go to standard output (Connect → Logs); `LOG_LEVEL` sets the verbosity. L
 |---|---|---|
 | Database | Neon PostgreSQL (Drizzle) | Unity Catalog Delta tables `policy_repo_*` — no enforced keys or row locks |
 | Files | Vercel Blob (public URLs) | UC Volume, served through the app |
-| Search | pgvector embeddings (semantic) | BM25 keyword search — questions should use the documents' vocabulary |
+| Search | pgvector embeddings (semantic) | Databricks AI Search (hybrid vector + keyword) |
 | AI | OpenAI/Anthropic/DeepL, streamed answers | mAI gateway only; answers appear when finished (progress shown) |
 | Translation | DeepL | mAI (`translation_source = mai`) |
 | Sign-in | Google (Auth.js) | Connect identity or local accounts; no roles |
@@ -501,7 +498,7 @@ The Databricks and mAI paths could be exercised only against a local SQLite stan
 | **ENG / ORI** | English / original-language document of a record |
 | **Text layer** | A PDF that contains real text (not just a picture of a page) — required for indexing |
 | **Chunk / passage** | A ≤ 2,000-character piece of a document, the unit of search |
-| **BM25 / FTS5** | The ranking method / SQLite full-text engine used for keyword search |
+| **AI Search** | Databricks' managed vector + keyword search index over the chunks table |
 | **RAG** | Retrieval-augmented generation: find passages first, then let the AI answer from them |
 | **mAI gateway** | Posit's service that gives apps on Posit Connect access to approved AI models without API keys |
 | **Unity Catalog (UC)** | Databricks' governance layer: catalogs → schemas → tables / volumes |

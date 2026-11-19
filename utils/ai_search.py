@@ -300,15 +300,6 @@ def sync_now() -> bool:
     return True
 
 
-def sync_best_effort() -> bool:
-    try:
-        return sync_now()
-    except Exception as exc:  # noqa: BLE001
-        if classify(exc) not in ("permission", "auth", "not_found"):     # those were logged by access_problem
-            log.warning("AI Search sync not started (%s) – it will be picked up by the next sync", exc)
-        return False
-
-
 # Debounced background sync: uploads mark the index dirty; one daemon thread syncs at most every
 # AI_SEARCH_SYNC_DEBOUNCE_SECONDS and retries while a previous sync is still running.
 _dirty = threading.Event()

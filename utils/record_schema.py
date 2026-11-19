@@ -18,11 +18,6 @@ import constants as C
 JURISDICTION_LEVELS = tuple(C.JURISDICTION_LEVELS)
 RECORD_STATUSES = tuple(C.RECORD_STATUSES)
 
-FIELDS = [
-    "country", "name_eng", "name_orig", "year", "source", "year_revised", "overview", "policy_guidance_tier",
-    "strategy_tier", "jurisdiction_level", "jurisdiction_name", "record_status", "superseded_by_link",
-    "superseded_by_note", "machine_readable", "comment", "link", "pages", "tokens",
-]
 _UNSET = object()
 
 
@@ -64,7 +59,7 @@ def _to_int(v: Any, errors: dict, field: str, lo: int | None = None, hi: int | N
     return n
 
 
-def _text(v: Any, errors: dict, field: str, max_len: int, too_long: str, nullable: bool = True, blank_to_null: bool = False):
+def _text(v: Any, errors: dict, field: str, max_len: int, too_long: str, blank_to_null: bool = False):
     if v is None or (blank_to_null and isinstance(v, str) and v.strip() == ""):
         return None
     if not isinstance(v, str):

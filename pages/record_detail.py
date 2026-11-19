@@ -22,7 +22,7 @@ from utils.icons import icon
 from utils.record_form import HIDDEN, SHOWN, LANG_LABELS
 from utils.routes import href
 from utils.toast import toast
-from utils.ui import (DIALOG_HIDE, DIALOG_SHOW, badge, button, button_class, cn, dialog, dialog_description,
+from utils.ui import (DIALOG_HIDE, DIALOG_SHOW, badge, button, button_class, dialog, dialog_description,
                       dialog_footer, dialog_header, dialog_title, label, link, select, separator, text_input)
 
 log = logging.getLogger(__name__)
