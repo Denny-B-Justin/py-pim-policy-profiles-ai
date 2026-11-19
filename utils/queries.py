@@ -38,9 +38,9 @@ def _doc(r: dict) -> dict:
     out["uploaded_at"] = to_dt(out.get("uploaded_at"))
     out["text_layer"] = to_bool(out.get("text_layer"))
     out["file_size"] = to_int(out.get("file_size"))
-    # the table has no path column: the file is found through blob_url (app uploads) or the repository manifest;
-    # None = not in the repository yet
-    out["file_path"] = storage.document_path(out)
+    # the table has no path column: blob_url records where the upload went in the volume (informational only –
+    # the app never reads it back)
+    out["file_path"] = storage.upload_path(out.get("blob_url"))
     return out
 
 
@@ -126,8 +126,8 @@ def set_link_status(record_id: str, link_ok: int | None, checked_at: datetime | 
 
 
 def delete_record(record_id: str) -> list[dict]:
-    """Delete a record + its documents.  Returns the removed document rows (so the caller can delete the
-    files and the search-index chunks from storage)."""
+    """Delete a record + its documents.  Returns the removed document rows (so the caller can delete their
+    search-index chunks)."""
     docs = get_documents_for_record(record_id)
     db.execute(f"DELETE FROM {table('documents')} WHERE record_id = :id", {"id": record_id})
     db.delete("policy_records", record_id)
@@ -311,18 +311,6 @@ def get_records_with_docs_by_country(iso3: str) -> list[dict]:
     return [x for x in _attach_docs(rows) if x["docs"]]
 
 
-def get_country_docs_for_download(iso3: str, lang: str = "all") -> list[dict]:
-    sql = (f"SELECT p.name_eng AS record_name, p.policy_guidance_tier AS tier, d.lang_type, d.lang_label, "
-           f"d.file_name, d.file_size, d.id, d.blob_url FROM {table('documents')} d "
-           f"JOIN {table('policy_records')} p ON p.id = d.record_id WHERE p.country = :c")
-    params = {"c": iso3}
-    if lang in ("ENG", "ORI"):
-        sql += " AND d.lang_type = :lt"
-        params["lt"] = lang
-    sql += " ORDER BY p.policy_guidance_tier ASC NULLS LAST, LOWER(p.name_eng) ASC"
-    return [{**r, "file_path": storage.document_path(r)} for r in db.query(sql, params)]
-
-
 def export_all_records_with_docs() -> list[dict]:
     names = country_name_map()
     recs = [_rec(r) for r in db.query(f"SELECT * FROM {table('policy_records')} ORDER BY country ASC, "
@@ -361,12 +349,12 @@ def upsert_document(doc_id: str, record_id: str, lang_type: str, key: str, lang_
                     lang_label: str | None = None, file_name: str | None = None, file_size: int | None = None,
                     translation_source: str | None = None, text_layer: bool | None = None) -> dict:
     """Max one ENG + one ORI document per record (UC has no UNIQUE → select-then-write).  `doc_id` = the slot's
-    existing id (replacement) or a new one; the file must already be stored at `key` (in the repository)."""
+    existing id (replacement) or a new one; `key` is where the file is uploaded in the volume."""
     source = translation_source if lang_type == "ENG" else None
     existing = get_slot_document(record_id, lang_type)
     if existing:
         doc_id = existing["id"]
-    # `blob_url` (the old Vercel link column) records where the file now lives – document_path() reads it back
+    # `blob_url` (the old Vercel link column) records where the file was uploaded
     values = dict(lang_code=lang_code, lang_label=lang_label, blob_url=storage.location(key), file_name=file_name,
                   file_size=file_size, translation_source=source, text_layer=text_layer, uploaded_at=db.now())
     if existing:
@@ -374,10 +362,7 @@ def upsert_document(doc_id: str, record_id: str, lang_type: str, key: str, lang_
     else:
         db.insert("documents", {"id": doc_id, "record_id": record_id, "lang_type": lang_type, **values})
     recompute_machine_readable(record_id)
-    doc = _doc(db.query(f"SELECT * FROM {table('documents')} WHERE id = :i", {"i": doc_id})[0])
-    replaced = existing["file_path"] if existing else None
-    doc["_replaced_path"] = replaced if replaced and replaced != key else None
-    return doc
+    return _doc(db.query(f"SELECT * FROM {table('documents')} WHERE id = :i", {"i": doc_id})[0])
 
 
 def get_document(doc_id: str) -> dict | None:

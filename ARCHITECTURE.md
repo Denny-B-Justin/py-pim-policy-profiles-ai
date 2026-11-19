@@ -1,14 +1,14 @@
 # Architecture — PIM Policy Profiles AI (Dash on Posit Connect)
 
-> **Search index update.** The index is no longer a set of JSON chunk files in the volume searched with in-process BM25.
-> Chunks are rows of the Delta table `policy_repo_document_chunks` (with a per-document `policy_repo_document_ingest_log`), and retrieval
-> runs on a **Databricks AI Search** Delta Sync index over that table (hybrid vector + keyword search, embeddings computed by Databricks);
-> BM25 over the same table remains as fallback and for the local demo. Where this document mentions `chunks/*.json`, the in-memory FTS5
-> index as the primary engine, or "no embeddings", read **[docs/AI_SEARCH.md](docs/AI_SEARCH.md)** instead.
+> **Document flow.** When a document is uploaded the app does exactly three things with Databricks: it **uploads** the file to the
+> UC volume `…/upload-files/documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/`, it **chunks** the same bytes in the
+> app (in parallel) and inserts the rows into `policy_repo_document_chunks`, and it asks the **AI Search index**
+> `policy_repo_document_chunks_index` to sync. Files are never read back, downloaded or re-chunked from the volume; there is no
+> migration, backfill, re-index or reconcile. Where this document disagrees, **[docs/AI_SEARCH.md](docs/AI_SEARCH.md)** is current.
 
 > **In plain words.** This application is a searchable library of public-investment-management (PIM) policy documents — laws, regulations, guidelines and strategies — from many countries. Staff add a *policy record* (its name, year, country, type of instrument, a link to the official source) and attach the document itself, in its original language and, where available, in English. The application reads each document, cuts it into short passages and keeps an index of them, a bit like the index at the back of a book. When someone asks a question in the **AI Coach**, or asks for a **country briefing**, the application looks up the passages that best match, hands them together with the question to an AI service (Posit's *mAI* service) and shows the answer with the sources it used. Everything that matters — the records, the documents, the index, the saved briefings, the user accounts — is kept in your organisation's Databricks workspace: a set of tables for the information and a folder (a *volume*) for the files. The web application itself keeps nothing that cannot be rebuilt, so it can be redeployed or restarted at any time without losing data.
 >
-> **Technically.** A single Python 3.11 **Dash/Flask** application runs on Posit Connect (entrypoint `app:app`); every page is a module in `pages/` selected by the `?page=` query parameter, and all JSON/file endpoints are Flask routes on the same server. All structured data lives in **Delta tables `prd_mega.sgpbpi163.policy_repo_*`** (Unity Catalog), read and written through the `databricks-sql-connector` with an OAuth machine-to-machine service principal (client id/secret from environment variables, one shared connection per process). Uploaded PDF/DOCX/TXT files live in the **document repository `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/pim-repositary/`** (written with the Databricks SDK), filed by country / jurisdiction / year / tier / language; a document is found through the repository's `_manifest.json` or, for app uploads, the path recorded in its row. When a document is attached, replaced or deleted, the app saves/removes the file, upserts the `policy_repo_documents` row and — in a background thread — extracts the text (`pypdf`/`python-docx`), splits it into section-aware chunks of ≤ 2,000 characters and writes them as that document's **JSON chunk file** in the same folder's `chunks/`. For retrieval each process loads the chunk files (joined with the records' fields) into an in-memory SQLite **FTS5/BM25** index (rebuilt when a chunk file or record changes, checked every ≤ 30 s) — there are no embeddings because the **mAI gateway** only offers chat models. The AI Coach, the briefings and the partner `/api/v1/coach/query` endpoint run *condense → retrieve top passages → one mAI call* (plain HTTP/SDK with `X-Posit-App-Id` = `CONNECT_CONTENT_GUID`, no API key); since the gateway cannot stream, long work runs as **background jobs** whose progress is written to small JSON files and polled by the browser every second or two; finished briefings are cached in `policy_repo_briefings_cache`. Authentication is the Posit Connect identity header or a local e-mail/password account (`policy_repo_users`, signed Flask cookie); every write goes through `auth.write_guard()` and is recorded in `policy_repo_audit_logs`.
+> **Technically.** A single Python 3.11 **Dash/Flask** application runs on Posit Connect (entrypoint `app:app`); every page is a module in `pages/` selected by the `?page=` query parameter, and all JSON/file endpoints are Flask routes on the same server. All structured data lives in **Delta tables `prd_mega.sgpbpi163.policy_repo_*`** (Unity Catalog), read and written through the `databricks-sql-connector` with an OAuth machine-to-machine service principal (client id/secret from environment variables, one shared connection per process). Uploaded PDF/DOCX/TXT files are **uploaded** (write-only) to the UC volume folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/` with the Databricks SDK. At the same time, in a background thread, the app extracts the text of the uploaded bytes (`pypdf`/`python-docx`), splits it into section-aware chunks of ≤ 2,000 characters, MERGEs them into the Delta table `policy_repo_document_chunks` and asks the Databricks AI Search Delta Sync index `policy_repo_document_chunks_index` to sync; retrieval is a hybrid (vector + keyword) query on that index. The AI Coach, the briefings and the partner `/api/v1/coach/query` endpoint run *condense → retrieve top passages → one mAI call* (plain HTTP/SDK with `X-Posit-App-Id` = `CONNECT_CONTENT_GUID`, no API key); since the gateway cannot stream, long work runs as **background jobs** whose progress is written to small JSON files and polled by the browser every second or two; finished briefings are cached in `policy_repo_briefings_cache`. Authentication is the Posit Connect identity header or a local e-mail/password account (`policy_repo_users`, signed Flask cookie); every write goes through `auth.write_guard()` and is recorded in `policy_repo_audit_logs`.
 
 ---
 
@@ -80,12 +80,12 @@ Design rules that explain most of the code:
 
 | What | Where | Written by | Read by | Survives a restart / redeploy? |
 |---|---|---|---|---|
-| Policy records (name, year, tier, status, link, …) | Delta table `policy_repo_policy_records` | record form, batch import, link checker, migration | almost every page, API | **Yes** |
-| Document *metadata* (language, file name, size, translation source, `text_layer`, path) | `policy_repo_documents` | upload / replace / delete, translation, batch import | record pages, downloads, indexer | **Yes** |
-| The **document files** (PDF, DOCX, TXT; up to 250 MB each) | **UC Volume** folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/pim-repositary/<ISO3>_<Country>/<National|Subnational_<entity>|Supranational>/<Year>/<Tier>/<ENG|ORI_<language>>/<id8>_<file name>` | `utils/storage.py` | download routes, indexer, translator | **Yes** |
-| **Search index** (text passages) | **JSON files** in `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/chunks/` (one per document) | `utils/indexer.py` | `utils/rag.py` | **Yes** (the files) — the in-memory BM25 copy is rebuilt on start |
+| Policy records (name, year, tier, status, link, …) | Delta table `policy_repo_policy_records` | record form, batch import, link checker | almost every page, API | **Yes** |
+| Document *metadata* (language, file name, size, translation source, `text_layer`, upload path) | `policy_repo_documents` | upload / replace / delete, batch import | record pages, indexer | **Yes** |
+| The **document files** (PDF, DOCX, TXT; up to 250 MB each) | **UC Volume** folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/<id8>_<file name>` | `utils/storage.py` (upload only) | — (never read back by the app) | **Yes** |
+| **Search index** (text passages) | Delta table `policy_repo_document_chunks` + AI Search index `policy_repo_document_chunks_index` | `utils/indexer.py` at upload time | `utils/rag.py` / `utils/ai_search.py` | **Yes** |
 | Saved AI briefings (profile, transparency; per country/language/scope) | `policy_repo_briefings_cache` | briefing generation | briefing panels, `/api/briefings` | **Yes** |
-| Countries reference (name, GDP, public investment 2024) | `policy_repo_countries` | `scripts/seed_countries.py` / migration | everywhere | **Yes** |
+| Countries reference (name, GDP, public investment 2024) | `policy_repo_countries` | `scripts/seed_countries.py` | everywhere | **Yes** |
 | IMF PIMA / C-PIMA assessments | `policy_repo_imf_pima_assessments` | `utils/imf_pima.py` (refresh) | Countries page, Excel export, `/api/imf-pima` | **Yes** |
 | Local user accounts (e-mail, bcrypt hash) | `policy_repo_users` | register page | sign-in | **Yes** |
 | Partner API keys (SHA-256 hash only) | `policy_repo_partner_api_keys` — **not created yet; the partner API is off** (`PIM_PARTNER_API`) | `scripts/issue_api_key.py` | `/api/v1/*` | **Yes** |
@@ -98,28 +98,21 @@ Design rules that explain most of the code:
 | Session cookie of a local sign-in | browser cookie `pim_session` (signed with `PIM_SECRET_KEY`) | sign-in | every request | Until it expires (30 days) |
 | Secrets and endpoints | Connect environment variables (or `.env` locally) | administrator | `constants.py` | Stored by Connect |
 
-There is **no other database**: no NoSQL store, no Redis, no separate vector database. (The Next.js original used Neon PostgreSQL, pgvector and Vercel Blob — see `docs/DATABRICKS_MIGRATION.md`.)
+There is **no other database**: no NoSQL store, no Redis, no separate vector database.
 
 ### Layout of the volume
 
 ```
 /Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/      (constants.FILES_ROOT)
-   documents/pim-repositary/                          (constants.DOCUMENTS_DIR – the document repository)
-      _manifest.json   _manifest.csv                  {document id: path} / the same as a readable list
+   documents/upload-documents/                       (constants.DOCUMENTS_DIR – where uploads go)
       LTU_Lithuania/
-         National/                                    or Subnational_<entity> / Supranational
-            2014/                                     or UnknownYear
-               Tier1_Primary-Legislation/             Tier2_Secondary-Regulations, Tier3_Guidelines, Tier4_Strategies, Unclassified
-                  ENG/
-                     8c1e2f3a_Law_on_the_Budget_Structure.pdf     <first 8 chars of document id>_<file name>
-                  ORI_Lithuanian/
-                     f6a19b07_Biudzeto_sandaros_istatymas.pdf
-   chunks/
-      <record-id>__ENG__<document-id>.json             search-index chunks of that document
-      <record-id>__ORI__<document-id>.json
+         National/                                    or Subnational
+            8c1e2f3a_Law_on_the_Budget_Structure.pdf  <first 8 chars of document id>_<file name>
 ```
 
-The documents table has **no path column** (it keeps the old `blob_url` column). `storage.document_path(doc)` finds a file: for documents uploaded through the app, `blob_url` holds their full repository path; for migrated documents (`blob_url` = old Vercel link) the path comes from `_manifest.json` in the repository, keyed by document id (re-read every 5 minutes). A document in neither has no file yet: its download answers 404 and it is not indexed. Because the path is stored rather than recomputed, editing a record's country, year or tier later does not break it (the file simply stays in its original folder). New uploads are filed with `storage.repository_key()`. A record has at most **one `ENG` and one `ORI` document**; attaching a new file to an occupied slot keeps the slot's document id and replaces the old file (the old file is deleted). Existing files are downloaded from Vercel into the local folder `files-to-transfer/` (same layout + manifest) with `python scripts/copy_documents_to_volume.py`, then uploaded by hand into the repository folder.
+The volume is **write-only** for the app: files are uploaded there and never listed, read, downloaded or deleted. The documents table
+has no path column; `blob_url` records where the upload went (informational). A record has at most **one `ENG` and one `ORI`
+document**; attaching a new file to an occupied slot keeps the slot's document id and re-chunks it (the earlier upload stays in the volume).
 
 ---
 
@@ -130,7 +123,7 @@ All tables carry the prefix `policy_repo_` and live in `prd_mega.sgpbpi163`. The
 ```
  policy_repo_countries ──┐ iso3
                  ├──< policy_repo_policy_records >──┬──< policy_repo_documents  (ENG / ORI, one file each)
-                 │       (id)               └──  chunks/*.json in the volume  (search passages)
+                 │       (id)               └──  policy_repo_document_chunks (search passages)
                  │                                   ▲ record_id, document_id
  policy_repo_imf_pima_assessments (iso3)        policy_repo_briefings_cache (country, lang, scope)
  policy_repo_batch_imports ──< policy_repo_batch_import_rows ──> record_id
@@ -142,12 +135,12 @@ All tables carry the prefix `policy_repo_` and live in `prd_mega.sgpbpi163`. The
 | `policy_repo_countries` | `iso3` (key), `name`, `gdp_2024_bn`, `pub_inv_pct_gdp`, `pub_inv_2024_bn` — 196 rows from `data/countries.json` |
 | `policy_repo_policy_records` | `id`, `country` (ISO-3), `name_eng`, `name_orig`, `year`, `year_revised`, `source`, `overview`, `policy_guidance_tier` (1–4), `strategy_tier` (1–6, only when tier = 4), `jurisdiction_level` (`national` / `subnational` / `supranational`), `jurisdiction_name`, `record_status` (`latest` / `archived`), `superseded_by_link/_note`, `machine_readable`, `comment`, `link` + `link_ok` / `link_checked_at` / `link_last_ok_at`, `pages`, `tokens`, `created_at`, `updated_at` |
 | `policy_repo_documents` | `id`, `record_id`, `lang_type` (`ENG` / `ORI`), `lang_code`, `lang_label`, `translation_source` (`official`, `mai`, `deepl`, `google`, `wbg`, `other`), `text_layer` (false = scanned image, cannot be indexed), `blob_url` (informational), `file_name`, `file_size`, `uploaded_at` |
-| *chunk files* (`chunks/*.json`, not a table) | per document: `document_id`, `record_id`, `lang_type`, `lang_code`, `created_at` and the passages (`section_heading`, `page`, `chunk_index`, `content`). The record's descriptive fields (country, names, year, source, tiers, `record_status`) are **joined from `policy_repo_policy_records` when the index loads**, so editing a record needs no re-index |
+| `policy_repo_document_chunks` | one row per chunk: `chunk_id`, `document_id`, `record_id`, `lang_type`, `lang_code`, `section_heading`, `page`, `chunk_index`, `content`, `embedding_text`, copied record fields, `row_hash` – the source of the AI Search index (see docs/AI_SEARCH.md) |
 | `policy_repo_briefings_cache` | `brief_key` (`profile` / `transparency`), `country`, `lang_type`, `scope` (`all` / `national` / `sub:<entity>`), `content` (Markdown), `generated_at` |
 | `policy_repo_imf_pima_assessments` | per country: assessment type (PIMA / C-PIMA), title, status, mission date, report/summary URLs, `source` (`portal`, `imf.org`, curated reference), `fetched_at` |
 | `policy_repo_users` | `email`, `name`, `password_hash` (bcrypt), `created_at` |
 | `policy_repo_partner_api_keys` | `key_hash` (SHA-256), `key_prefix`, `name`, `contact_email`, `rate_limit_per_minute`, `active`, `last_used_at`, `revoked_at` |
-| `policy_repo_audit_logs` | `user_email`, `action` (`create`, `update`, `delete`, `upload`, `reindex`), `entity` (`record`, `document`, `batch`, `rag_index`), `entity_id`, `detail`, `ip`, `created_at` |
+| `policy_repo_audit_logs` | `user_email`, `action` (`create`, `update`, `delete`, `upload`), `entity` (`record`, `document`, `batch`), `entity_id`, `detail`, `ip`, `created_at` |
 | `policy_repo_batch_imports` / `policy_repo_batch_import_rows` | one row per upload and per spreadsheet row; `raw` (the original row) and `errors` hold JSON text |
 
 Two fields worth knowing:
@@ -169,15 +162,15 @@ pages/                      ONE FILE PER PAGE.  Each exposes  layout(params)  [+
   pages_constants.py        Page copy: tab titles, card text, legends, labels and per-page colours (one section per page)
   home, countries, country_detail, map_page, repository, record_detail, record_new, record_edit,
   batch_upload, coach, country_profile, country_transparency, policy_changes, benchmark, statistics,
-  raging (index admin), download, api_docs, about, release_notes, signin, register, not_found, error_page
+  raging (index status), api_docs, about, release_notes, signin, register, not_found, error_page
 
 utils/                      Everything the pages share
   db.py  schema.py          SQL access (Databricks or SQLite), TTL cache, DDL for every table
   queries.py                All SQL for records, documents, countries, stats, briefings cache
-  storage.py                Files: UC Volume folder (production) / local folder (demo) — documents/ + chunks/; save, read, stream, delete, list
-  documents.py              Attach / replace / delete a record's documents + "translate to English" job
+  storage.py                Upload-only file storage: UC Volume folder (production) / local folder (demo)
+  documents.py              Attach / replace / delete a record's documents (upload + chunking in parallel)
   extract.py chunking.py    Text extraction (PDF/DOCX/TXT) and section-aware chunking
-  indexer.py                Keeps the chunk files in step with documents (index, delete, reconcile, full re-index)
+  indexer.py                Chunks uploaded bytes into policy_repo_document_chunks, deletes chunks, requests index syncs
   rag.py                    BM25 retrieval over the chunk table (in-memory SQLite FTS5), index statistics
   mai_client.py             The only place that talks to the mAI gateway (Claude Converse / OpenAI Responses / Gemini)
   prompts.py                System prompts for the Coach, briefings, translation, query rewriting
@@ -191,17 +184,16 @@ utils/                      Everything the pages share
   imf_pima.py               Scrapes imf.org PIMA pages + curated references
   check_link.py             Link reachability checker (with SSRF protection)
   auth.py api_keys.py ratelimit.py audit.py   Sign-in, partner keys, in-process rate limits, audit log
-  api_routes.py             Flask routes: downloads, JSON API, cron routes, partner API v1
+  api_routes.py             Flask routes: JSON API, cron route, partner API v1
   export.py xlsx_exports.py Word/PDF export of briefings; Excel exports
   ui.py components.py widgets.py layout.py icons.py routes.py toast.py   UI building blocks (Tailwind classes), navigation, helpers
 
 assets/                     style.css (compiled Tailwind), app.js (client helpers), map.js (Leaflet map), fonts, logo, countries.geojson,
                             vendor/ (Leaflet, ReDoc — loaded on demand), templates/ (batch-upload xlsx + data dictionary docx)
 data/                       countries.json, imf-pima-references.json, openapi.json, release_notes.json
-scripts/                    create_tables · seed_countries · migrate_from_postgres · reindex · cron_reconcile · cron_refresh_pima ·
+scripts/                    create_tables · seed_countries · cron_refresh_pima · check_ai_search ·
                             issue_api_key · seed_demo (local preview only)
 sql/uc_tables.sql           DDL for the Unity Catalog tables
-docs/DATABRICKS_MIGRATION.md   Table names, data migration, NoSQL/JSONB/pgvector conversion
 tools/                      CSS and icon build sources (not deployed)
 ```
 
@@ -223,13 +215,12 @@ Page ↔ URL reference:
 | `?page=countries`, `?page=country&iso3=LTU` | `countries.py`, `country_detail.py` | country list with IMF PIMA status; policies of one country |
 | `?page=map` | `map_page.py` + `assets/map.js` | Leaflet map coloured by original language |
 | `?page=repository` | `repository.py` | search / filter / sort all records; "Recheck links" |
-| `?page=record&id=…`, `record-new`, `record-edit&id=…` | `record_detail.py`, `record_new.py`, `record_edit.py` | view, create, edit (documents, translation) |
+| `?page=record&id=…`, `record-new`, `record-edit&id=…` | `record_detail.py`, `record_new.py`, `record_edit.py` | view, create, edit (document upload) |
 | `?page=batch` | `batch_upload.py` | bulk import from XLSX/CSV |
 | `?page=coach`, `country-profile`, `country-transparency` | `coach.py` … | AI Coach and the two briefings |
 | `?page=policy-changes` | `policy_changes.py` | what changed in a country's profile |
 | `?page=statistics` | `statistics.py` | search-index analytics (Plotly) |
-| `?page=raging` | `raging.py` | RAG admin: rebuild the index (sign-in required) |
-| `?page=download` | `download.py` | download one country's documents |
+| `?page=raging` | `raging.py` | RAG admin: index statistics and status (sign-in required) |
 | `?page=api-docs`, `about`, `release-notes`, `benchmark` | | static content |
 | `?page=signin`, `register` | | local accounts |
 
@@ -251,24 +242,22 @@ Same form with `mode=edit`. Only the **changed** fields are written (`updated_at
 
 ### 6.3 Attach, replace or delete a document
 1. Upload (`dcc.Upload` → base64 → bytes). Allowed: `.pdf .doc .docx .txt`, ≤ 250 MB (in practice limited by Connect's maximum request size).
-2. `documents.attach_document()` takes the slot's document id (or a new one), files it at `storage.repository_key()` (country / jurisdiction / year / tier / language), **saves the file to the repository** (path recorded in `blob_url`), detects whether the file has a text layer, and **upserts the `policy_repo_documents` row** for that record + `ENG`/`ORI` slot. A replaced file is deleted from the volume.
+2. `documents.attach_document()` takes the slot's document id (or a new one), detects whether the file has a text layer, **upserts the `policy_repo_documents` row** for that record + `ENG`/`ORI` slot, then — **in parallel** — uploads the file to `documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/` in the volume (path recorded in `blob_url`) and starts the chunking job.
 3. `queries.recompute_machine_readable()` updates the record's `machine_readable` flag from its documents' `text_layer`.
-4. **In a background thread** `indexer.index_document()`:
-   `read file` → `extract.load_pages()` (PDF pages / DOCX / TXT) → `chunking.chunk_pages()` → writes `chunks/<record-id>__<ENG|ORI>__<document-id>.json` (replacing the document's previous chunk file) → `rag.invalidate()`.
+4. **In a background thread** `indexer.index_document()` works on the uploaded bytes (never on the volume):
+   `extract.load_pages()` (PDF pages / DOCX / TXT) → `chunking.chunk_pages()` → MERGE rows into `policy_repo_document_chunks` → ingest log → request an AI Search sync.
    Scanned PDFs (`text_layer = false`) are skipped and flagged — they need OCR first.
-5. Deleting a document removes the file, the `policy_repo_documents` row and its chunks.
+5. Deleting a document removes the `policy_repo_documents` row and its chunk rows; the uploaded file stays in the volume.
 
-### 6.4 "Translate to English"
-Available on a record that has an original-language document but no English one.
-1. A job (`documents.translate_record_to_english`) reads the original file from the volume and extracts its text.
-2. The text is split into pieces of ≤ 6,000 characters (`TRANSLATE_CHUNK_CHARS`); each piece is translated with one mAI call (a few in parallel, `PIM_TRANSLATE_WORKERS`); the page shows progress (done/total). The size is estimated first and refused above `PIM_MAX_TRANSLATE_CHARS` (default 600,000 characters).
-3. The result is written as a **.docx** and attached as the record's `ENG` document with `translation_source = 'mai'` — which then follows 6.3 (stored, indexed).
+### 6.4 English versions
+Upload the English document yourself and pick its translation source, or let the batch importer machine-translate a missing English
+document from the downloaded original (→ 6.5). The app does not translate files already stored in the volume.
 
 ### 6.5 Batch upload (`?page=batch`)
 1. The user downloads the template from the page (`assets/templates/…xlsx`, with a data dictionary), fills the **Policies** sheet and uploads it (XLSX or CSV).
 2. `batch.parse_and_store()` validates every row (country, English name, 4-digit year, tier and strategy rules, jurisdiction, status, URLs, translation-source values — the original language is required whenever an original document link is given), stores the batch in `policy_repo_batch_imports` / `policy_repo_batch_import_rows`, and shows a preview: valid / invalid / will-be-skipped counts.
 3. The user chooses what to do when a record with the same country + English name already exists — **skip**, **update** or **create anyway** — and whether to **auto-translate** missing English documents.
-4. *Import* starts a background job (`batch.run_batch`). For each valid row: download the document URL(s) (https only, public hosts only — private/internal addresses are refused, 25 MB cap), then create/update the record, attach the files (→ 6.3), optionally translate (→ 6.4). Documents are fetched **before** the record is written, so a failed download never leaves an empty record.
+4. *Import* starts a background job (`batch.run_batch`). For each valid row: fetch the document URL(s) (https only, public hosts only — private/internal addresses are refused, 25 MB cap), then create/update the record, attach the files (→ 6.3), optionally translate the fetched original in memory. Documents are fetched **before** the record is written, so a failed fetch never leaves an empty record.
 5. Progress is polled; at the end the user can download a results CSV. An interrupted import can be resumed — rows that are already done are not repeated.
 
 ### 6.6 AI Coach question
@@ -297,13 +286,10 @@ No AI. `utils/changes.py` reads `created_at` / `updated_at` of the country's rec
 `imf_pima.refresh()` reads the IMF's public PIMA/C-PIMA pages, matches each country name to an ISO-3 code, upserts `policy_repo_imf_pima_assessments`, and then applies the curated entries in `data/imf-pima-references.json` (reports the IMF site does not list). Run it on a schedule (see §13.2). The Countries page and an Excel export read the stored rows.
 
 ### 6.11 Search-index maintenance
-* **Automatic**: 6.2 and 6.3 keep the index in step.
-* **Reconcile** (`indexer.reconcile`): compares `policy_repo_documents` with the chunk files and repairs drift — indexes documents with no chunk file (max 12 per run) and removes chunk files of documents that no longer exist. Meant for a nightly schedule.
-* **Full re-index** (`?page=raging` or `scripts/reindex.py`): *Re-index All Documents* / *Re-index English Only* clear the index first and rebuild from the stored files; *Add Original Language Docs* appends without clearing. A pre-flight reads the first file before clearing so a storage problem cannot leave you with an empty index. Only one re-index can run at a time.
+* **Automatic**: 6.2 and 6.3 keep the chunk table in step and ask the AI Search index to sync.
+* There is no re-index or reconcile: the app never reads files back from the volume. To re-chunk a document, upload it again.
 
-### 6.12 Downloads and exports
-* One document: `/api/download/<document-id>` streams the file from the volume.
-* A country's documents: `/api/download/country/<ISO3>?lang=ENG|ORI|all` returns a zip (also reachable from `?page=download`).
+### 6.12 Exports
 * Corpus export for other pipelines: `/api/export/documents` (CORS + 10 requests/min/IP).
 * IMF PIMA table: `/api/imf-pima/export` (Excel).
 
@@ -354,7 +340,7 @@ All instructions given to the model live here: Coach system prompt, condense pro
 | **Query cache** | Fewer SQL round trips | `db.cached(key, ttl)`; default 60 s (`PIM_CACHE_SECONDS`). Every write calls `db.invalidate()`, so the *same* process sees changes immediately; *other* processes within the TTL. |
 | **BM25 index** | Retrieval | See §7.2. |
 | **One DB connection per process** | | `utils/db.py` keeps a single connection guarded by a lock and reconnects once on transport errors, so SQL statements of one process run one after another. |
-| **Locks** | Re-index and batch import | A process-local lock stops two re-indexes (or two runs of the same batch) from interleaving. They do not coordinate *between* processes — hence the recommendation of **Max processes = 1** on Connect. |
+| **Locks** | Batch import | A process-local lock stops two runs of the same batch from interleaving. It does not coordinate *between* processes — hence the recommendation of **Max processes = 1** on Connect. |
 
 Because job state is a file on the server's disk, a job survives page reloads but **not** a server restart; a restarted app simply shows the job as unknown and the user can start it again.
 
@@ -368,12 +354,11 @@ Dash callbacks handle all writes, so there are **no POST/PATCH/DELETE endpoints 
 |---|---|---|
 | `GET /api/health` | liveness | public |
 | `GET /api/records`, `/api/records/<id>`, `/api/records/language-breakdown`, `/api/countries`, `/api/jurisdictions` | read data | public |
-| `GET /api/download/<document-id>`, `/api/download/country/<ISO3>` | files / zip | public |
 | `GET /api/countries/<ISO3>/changes?mode=latest\|since&format=json\|md` | policy-change report | public |
 | `GET/POST /api/briefings` | read / save cached briefings | POST needs sign-in |
 | `GET /api/export/documents?since=&lang=` | corpus export | public, CORS, 10/min |
 | `GET /api/imf-pima`, `/api/imf-pima/export` | IMF PIMA data | public |
-| `GET/POST /api/rag-sync/reconcile`, `/api/imf-pima/refresh` | maintenance (cron) | `Authorization: Bearer $CRON_SECRET` or signed-in user |
+| `GET/POST /api/imf-pima/refresh` | maintenance (cron) | `Authorization: Bearer $CRON_SECRET` or signed-in user |
 | `GET /api/v1/countries`, `/records`, `/records/<id>`, `POST /api/v1/coach/query`, `GET /api/v1/openapi.json` | **partner API** for ePIM-CBA | header `X-API-Key`, per-key rate limit, documented at `?page=api-docs` |
 
 ---
@@ -390,11 +375,8 @@ Prefer the web interface: it keeps the search index, link status, audit log and 
 | **Archive a record that has been replaced** | Edit → set *Status* to `archived`, optionally *superseded by* link/note | Automatic; it disappears from "current" views and AI answers. |
 | **Replace a document** | Edit the record → upload a new file in the same slot (ENG or ORI) | Old file deleted, new one indexed. |
 | **Delete a document / a record** | Buttons on the record page | File, row and chunks are removed. |
-| **Add an English version of a foreign-language document** | Record page → *Translate to English* | Stored with provenance "mAI Translate" and indexed. Or upload your own file and pick its translation source. |
+| **Add an English version of a foreign-language document** | Record page → upload the English file and pick its translation source | Stored and indexed. |
 | **Change a field directly in SQL** | `UPDATE prd_mega.sgpbpi163.policy_repo_policy_records SET year = 2021, updated_at = current_timestamp() WHERE id = '…'` | (1) always set `updated_at` (Policy changes uses it); (2) search and citations pick up record changes automatically (record fields are joined into the index when it reloads); (3) the app shows it within ~60 s. |
-| **Replace a file straight in the volume** | Not recommended. If you must: overwrite the same path (see `_manifest.csv` or the row's `blob_url`), update `policy_repo_documents.file_size`, then in a Python shell run `from utils import indexer; indexer.index_document('<document id>')` | The index for that document is rebuilt. |
-| **Rebuild the whole search index** | `?page=raging` (sign in) → *Re-index*, or `python scripts/reindex.py --lang all` | Check `?page=statistics`. |
-| **Repair drift after manual DB work** | `python scripts/cron_reconcile.py` (or `GET /api/rag-sync/reconcile`) | Indexes documents that lack chunks, removes orphan chunks, re-syncs status. |
 | **Update country names / GDP / public-investment figures** | Edit `data/countries.json`, then `python scripts/seed_countries.py --update` (or `UPDATE policy_repo_countries …`) | Visible within 5 minutes (cache). |
 | **Refresh IMF PIMA data** | `python scripts/cron_refresh_pima.py` (or `GET /api/imf-pima/refresh` with the cron secret) | Countries page updates. Add curated entries in `data/imf-pima-references.json` first if needed. |
 | **Regenerate a briefing** | Open the briefing page → *Generate* | The cache row is overwritten. To drop stale ones: `DELETE FROM policy_repo_briefings_cache WHERE country = 'LTU'`. |
@@ -402,7 +384,6 @@ Prefer the web interface: it keeps the search index, link status, audit log and 
 | **Remove / reset a local account** | `DELETE FROM policy_repo_users WHERE email = '…'`; for a password reset set `password_hash` to a new bcrypt hash (`python -c "import bcrypt;print(bcrypt.hashpw(b'NewPass123',bcrypt.gensalt()).decode())"`) | — |
 | **Issue / revoke a partner API key** | `python scripts/issue_api_key.py --name "Org" --email x@y --rate-limit 120` / `--revoke <id>` | The plaintext key is shown once. |
 | **Fill the optional `tokens` or `pages` numbers** | `UPDATE … SET tokens = …` or the *Pages* field in the form | Statistics → *Total Tokens*. |
-| **Bring in data from the old Postgres database** | `scripts/migrate_from_postgres.py` (see `docs/DATABRICKS_MIGRATION.md`) | Then `scripts/reindex.py --lang all`. |
 | **Load the country list on a brand-new setup** | `python scripts/seed_countries.py` | — |
 
 Handy SQL (replace the catalog/schema if you moved them):
@@ -412,8 +393,6 @@ Handy SQL (replace the catalog/schema if you moved them):
 SELECT (SELECT COUNT(*) FROM prd_mega.sgpbpi163.policy_repo_policy_records) AS records,
        (SELECT COUNT(*) FROM prd_mega.sgpbpi163.policy_repo_documents)      AS documents;
 
--- the files in the volume (documents/ and chunks/)
-LIST '/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/chunks/';
 
 -- who changed what recently?
 SELECT created_at, user_email, action, entity, entity_id, detail
@@ -434,7 +413,7 @@ SELECT country, name_eng, link, link_last_ok_at FROM prd_mega.sgpbpi163.policy_r
 | Change **page titles / page text, labels, legends, colours** | `pages/pages_constants.py` |
 | Change **AI wording** | `utils/prompts.py` |
 | Change **styling** | Tailwind classes in the page/`utils/ui.py`; rebuild `assets/style.css`: `cd tools/css && npx tailwindcss -i input.css -o ../../assets/style.css` |
-| Add a **column or table** | Edit `utils/schema.py` (`SCHEMA`, `CREATE_ORDER`), add the table name to `constants.TABLES`, run `ALTER TABLE … ADD COLUMN …` (or `python scripts/create_tables.py` for new tables), update `utils/queries.py` and the migration script |
+| Add a **column or table** | Edit `utils/schema.py` (`SCHEMA`, `CREATE_ORDER`), add the table name to `constants.TABLES`, run `ALTER TABLE … ADD COLUMN …` (or `python scripts/create_tables.py` for new tables), update `utils/queries.py` |
 | Change the **mAI models/endpoints** | Connect environment variables `MAI_ENDPOINT_OPENAI` / `MAI_ENDPOINT_CLAUDE` / `MAI_ENDPOINT_GEMINI` / `MAI_MODEL` → restart the content; the offered model list is `constants.MAI_MODELS` |
 | Change **chunk size / retrieval depth** | `constants.CHUNK_SIZE` / `CHUNK_PARENT_CHARS`, `constants.RETRIEVER_K` / `BRIEFING_RETRIEVER_K` → then re-index |
 | Edit **About / release notes** | `pages/pages_constants.py` (`ABOUT_*`), `data/release_notes.json` |
@@ -447,22 +426,21 @@ After any code change: redeploy with `rsconnect deploy manifest manifest.json` (
 ## 13. Operations
 
 ### 13.1 Configuration (Connect → Content → Vars)
-`MAI_BASE_URL`, `MAI_ENDPOINT_OPENAI` / `MAI_ENDPOINT_CLAUDE` / `MAI_ENDPOINT_GEMINI` (at least one; optional `MAI_MODEL`); `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET`; recommended `PIM_SECRET_KEY`, `ADMIN_INVITE_CODE`; optional `CRON_SECRET`, `RAG_ADMIN_KEY`, `EXPORT_ALLOWED_ORIGINS`, `PUBLIC_BASE_URL`, `PIM_CACHE_SECONDS`, `PIM_JOB_WORKERS`, `PIM_JOBS_DIR`, `PIM_MAX_TRANSLATE_CHARS`, `PIM_TRANSLATE_WORKERS`. All are listed with explanations in `.env.sample`. Leave **Integrations** empty (mAI needs none). Never set `CONNECT_CONTENT_GUID` — Connect does.
+`MAI_BASE_URL`, `MAI_ENDPOINT_OPENAI` / `MAI_ENDPOINT_CLAUDE` / `MAI_ENDPOINT_GEMINI` (at least one; optional `MAI_MODEL`); `DATABRICKS_SERVER_HOSTNAME`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET`; recommended `PIM_SECRET_KEY`, `ADMIN_INVITE_CODE`; optional `CRON_SECRET`, `EXPORT_ALLOWED_ORIGINS`, `PUBLIC_BASE_URL`, `PIM_CACHE_SECONDS`, `PIM_JOB_WORKERS`, `PIM_JOBS_DIR`, `PIM_MAX_TRANSLATE_CHARS`, `PIM_TRANSLATE_WORKERS`. All are listed with explanations in `.env.sample`. Leave **Integrations** empty (mAI needs none). Never set `CONNECT_CONTENT_GUID` — Connect does.
 
-Databricks permissions for the service principal: `USE CATALOG`, `USE SCHEMA`, `SELECT`, `MODIFY`, `CREATE TABLE` on the schema, `READ VOLUME` / `WRITE VOLUME` on `policy_repo_documents`, and *Can use* on the SQL warehouse (see `docs/DATABRICKS_MIGRATION.md`).
+Databricks permissions for the service principal: `USE CATALOG`, `USE SCHEMA`, `SELECT`, `MODIFY`, `CREATE TABLE` on the schema, `READ VOLUME` / `WRITE VOLUME` on the volume `prd_mega.sgpbpi163.vgpbpi163`, *Can use* on the SQL warehouse, and ownership of the AI Search index (to sync it).
 
 ### 13.2 Scheduled work
 Two jobs are worth scheduling (they replace the Vercel cron jobs of the original):
 
 | Job | Suggested frequency | How |
 |---|---|---|
-| Search-index reconcile | nightly | `GET /api/rag-sync/reconcile` with `Authorization: Bearer $CRON_SECRET`, or run `scripts/cron_reconcile.py` |
 | IMF PIMA refresh | weekly | `GET /api/imf-pima/refresh` with the bearer token, or `scripts/cron_refresh_pima.py` |
 
 ### 13.3 Backups and recovery
 * **Tables** are Delta tables: `DESCRIBE HISTORY <table>` lists versions; `RESTORE TABLE <table> TO VERSION AS OF n` (or `TIMESTAMP AS OF …`) undoes a mistake within the retention window configured on your workspace.
 * **Files** in the volume have no version history. Keep a periodic copy elsewhere if the originals are not stored in another system. Records' `link` field points to the official source in most cases.
-* **The search index** is derived data — `python scripts/reindex.py --lang all` rebuilds it from the files.
+* **The search index** is derived from uploads: chunk rows are written when a document is uploaded. The app cannot rebuild it from the volume — re-upload a document to re-chunk it.
 * **Saved briefings** are derived but cost AI calls to recreate; they are in `policy_repo_briefings_cache`.
 
 ### 13.4 Monitoring
@@ -491,7 +469,6 @@ Logs go to standard output (Connect → Logs); `LOG_LEVEL` sets the verbosity. L
 | A change made in SQL isn't visible | Cache (60 s) — wait or restart; and see §11 for chunk metadata and `updated_at`. |
 | Signed out after every restart | `PIM_SECRET_KEY` not set. |
 | "Registration is closed" | An account exists; supply `ADMIN_INVITE_CODE`, or have the administrator add you in Connect. |
-| Re-index appears stuck | It runs in a background thread; progress is shown on `?page=raging`. After a server restart an interrupted run is gone — start it again. |
 | Map has no background tiles | The browser cannot reach `tile.openstreetmap.org` (OpenStreetMap); polygons still work. The tile server is set in `pages/pages_constants.py` (`MAP_TILES`). |
 
 ---

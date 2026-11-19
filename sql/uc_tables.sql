@@ -16,11 +16,10 @@
 --   GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE ON SCHEMA prd_mega.sgpbpi163 TO `<client-id>`;
 --   GRANT READ VOLUME, WRITE VOLUME ON VOLUME prd_mega.sgpbpi163.vgpbpi163 TO `<client-id>`;
 --
--- Document files live in the existing volume folder
---   /Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/country-files/   (document repository + _manifest.json)
+-- Uploaded documents are written (upload only) to the existing volume folder
+--   /Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files/documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/
 -- The search index is the table policy_repo_document_chunks (end of this file) + the Databricks AI Search index
 -- prd_mega.sgpbpi163.policy_repo_document_chunks_index built on it (docs/AI_SEARCH.md).
--- The v1 JSON chunk files in …/upload-files/chunks/ are no longer used.
 
 -- policy_repo_countries  ←  Postgres `countries`
 CREATE TABLE IF NOT EXISTS prd_mega.sgpbpi163.policy_repo_countries (

@@ -20,7 +20,7 @@ from utils.components import (machine_readable_badge, original_link_button, reco
 from utils.countries_data import resolve_country_name
 from utils.icons import icon
 from utils.record_form import HIDDEN, SHOWN, LANG_LABELS
-from utils.routes import api_url, href
+from utils.routes import href
 from utils.toast import toast
 from utils.ui import (DIALOG_HIDE, DIALOG_SHOW, badge, button, button_class, cn, dialog, dialog_description,
                       dialog_footer, dialog_header, dialog_title, label, link, select, separator, text_input)
@@ -80,9 +80,6 @@ def _doc_slot(label_text: str, lang_type: str, existing: dict | None):
                 html.P(size_txt, className="text-xs text-muted-foreground"),
             ], className="flex-1 min-w-0"),
             html.Div([
-                html.A(html.Span(icon("external-link", "h-3.5 w-3.5"), title="Open document",
-                                 className=button_class("ghost", "icon", "h-7 w-7")),
-                       href=api_url(f"/api/download/{existing['id']}"), target="_blank", rel="noopener noreferrer"),
                 html.Button(icon("trash-2", "h-3.5 w-3.5"), type="button", title="Delete document",
                             id={"type": "doc-del", "id": existing["id"]},
                             className=button_class("ghost", "icon", "h-7 w-7 text-destructive hover:text-destructive")),

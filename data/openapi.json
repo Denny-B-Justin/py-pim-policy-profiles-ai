@@ -218,11 +218,6 @@
           "file_size": {
             "type": "integer",
             "nullable": true
-          },
-          "download_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Absolute URL that downloads the file (served by this app, requires no API key)."
           }
         }
       },

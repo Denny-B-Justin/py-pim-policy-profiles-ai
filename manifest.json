@@ -152,9 +152,6 @@
     "pages/country_transparency.py": {
       "checksum": "cda9d96cb7de69ede3ca9c596738503a"
     },
-    "pages/download.py": {
-      "checksum": "25261d6d1eb675909236909f7ccc8e3e"
-    },
     "pages/error_page.py": {
       "checksum": "67bab0f4ce92eb81a88c3c7c86e3cc11"
     },
@@ -203,20 +200,11 @@
     "scripts/create_tables.py": {
       "checksum": "e399cd9f7c463512383f287ea1df4859"
     },
-    "scripts/copy_documents_to_volume.py": {
-      "checksum": "fef41b6e17aea2e751d4a3dde729a38e"
-    },
-    "scripts/cron_reconcile.py": {
-      "checksum": "5c3c40b64d3ff07bbf7335b726fb4358"
-    },
     "scripts/cron_refresh_pima.py": {
       "checksum": "2eb080d1fed39833cc548442e64e3981"
     },
     "scripts/issue_api_key.py": {
       "checksum": "00c8f8b020152320654e688146030d09"
-    },
-    "scripts/reindex.py": {
-      "checksum": "b2a07112f998e725b0456e7128c06ca5"
     },
     "scripts/seed_countries.py": {
       "checksum": "1d9aefa71018a692aff3bc0ba401ac22"

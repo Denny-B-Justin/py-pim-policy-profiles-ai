@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import constants as C  # noqa: E402
-from utils import auth, db, documents, imf_pima, indexer, queries  # noqa: E402
+from utils import auth, db, documents, imf_pima, queries  # noqa: E402
 from utils.db import table  # noqa: E402
 from utils.schema import all_ddl  # noqa: E402
 
@@ -163,10 +163,8 @@ def main() -> None:
             for lang_type, code, label, text_key, src in spec["docs"]:
                 data = make_pdf(spec["name_eng"], text_key, spec.get("scanned", False))
                 documents.attach_document(rec["id"], lang_type, f"{spec['name_eng'].replace(' ', '_')}_{lang_type}.pdf", data,
-                                          lang_code=code, lang_label=label, translation_source=src, index=False)
+                                          lang_code=code, lang_label=label, translation_source=src)
         print(f"seeded {len(RECORDS)} records")
-    done = indexer.reindex_all()
-    print("index:", done)
     # a couple of PIMA rows so the Countries table shows markers
     if not db.query(f"SELECT 1 FROM {table('imf_pima_assessments')} LIMIT 1"):
         imf_pima.apply_references()

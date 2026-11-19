@@ -140,12 +140,6 @@ COUNTRY_TRANSPARENCY_TITLE = APP_TITLE
 # raging  (RAG admin console)
 # ─────────────────────────────────────────────────────────────────────────────
 RAGING_TITLE = "RAG — PIM Policy Profiles AI"
-# re-index filter → button label
-RAGING_BUTTON_LABELS = {
-    "all": "Re-index All Documents",
-    "eng": "Re-index English Only",
-    "ori": "Add Original Language Docs",
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # benchmark
@@ -186,9 +180,8 @@ POLICY_CHANGES_TIER_DESC = {1: "Primary legislation", 2: "Secondary regulations"
                             3: "Procedural & methodological guidance", 4: "Strategies & plans"}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# download / api-docs
+# api-docs
 # ─────────────────────────────────────────────────────────────────────────────
-DOWNLOAD_TITLE = "Download — PIM Repository"
 API_DOCS_TITLE = "API — PIM Policy Profiles AI"
 
 # ─────────────────────────────────────────────────────────────────────────────

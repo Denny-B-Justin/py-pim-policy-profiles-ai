@@ -29,7 +29,6 @@ ROUTES: dict[str, str] = {
     "benchmark": "benchmark",
     "statistics": "statistics",
     "policy-changes": "policy_changes",
-    "download": "download",
     "api-docs": "api_docs",
     "about": "about",
     "release-notes": "release_notes",

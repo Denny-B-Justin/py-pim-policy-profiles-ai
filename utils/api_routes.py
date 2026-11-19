@@ -1,49 +1,40 @@
 """
 Flask routes living next to the Dash app (they share the same server / session) – ports of `web/app/api/**`.
 
-    GET  /api/download/<document id>                 attachment download of one stored document
-    GET  /api/download/country/<ISO3>?lang=ENG|ORI|all   zip of a country's documents
     GET  /api/countries[?withRecords=1]              lookup list
     GET  /api/records[?search=&country=&…]           list, GET /api/records/<id>, GET /api/records/language-breakdown
     GET  /api/jurisdictions                          sub-national entities with current records
     GET/POST /api/briefings                          cached AI briefs (POST needs a signed-in user)
     GET  /api/export/documents[?since=&lang=]        corpus export for downstream pipelines (CORS + rate limited)
-    GET/POST /api/rag-sync/reconcile                 repair the search index (cron bearer token or signed-in user)
     GET  /api/countries/<ISO3>/changes               policy-change report (json | md)
     GET  /api/imf-pima[?country=]  /api/imf-pima/export  GET/POST /api/imf-pima/refresh
     /api/v1/{countries,records,records/<id>,coach/query,openapi.json}   partner API (X-API-Key)
     GET  /api/health
 
-Document files are served by this app (the original proxied Vercel Blob URLs).  All writes (records, documents,
+Document files are never served: they are only uploaded to the UC volume.  All writes (records, documents,
 batch imports) happen in Dash callbacks, so there are no POST/PATCH/DELETE record endpoints.
 """
 
 from __future__ import annotations
 
-import io
 import json
 import logging
-import mimetypes
 import re
-import zipfile
 from datetime import date, datetime
 from decimal import Decimal
 from functools import wraps
 
-from flask import Blueprint, Response, abort, jsonify, request, stream_with_context
+from flask import Blueprint, Response, abort, jsonify, request
 
 import constants as C
-from utils import api_keys, auth, briefings, chat, indexer, mai_client, queries, storage
+from utils import api_keys, auth, briefings, chat, mai_client, queries
 from utils.ratelimit import rate_limit, rate_limit_state
 from utils.routes import api_url
 
 log = logging.getLogger(__name__)
 bp = Blueprint("pim_api", __name__)
 
-MAX_ZIP_BYTES = C.MAX_ZIP_BYTES
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
-_DOC_MIME = {".pdf": "application/pdf", ".doc": "application/msword", ".txt": "text/plain; charset=utf-8",
-             ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -72,11 +63,6 @@ def _origin() -> str:
     return f"{proto}://{host}"
 
 
-def _abs(path: str) -> str:
-    """Absolute URL of an app route (includes the Posit Connect content prefix)."""
-    return _origin() + api_url(path)
-
-
 def _camel(key: str) -> str:
     head, *rest = key.split("_")
     return head + "".join(p.title() for p in rest)
@@ -93,7 +79,6 @@ def _camelize(o):
 def _doc_out(d: dict, camel: bool = False) -> dict:
     """Public view of a document row (never leaks the internal storage key)."""
     out = {k: v for k, v in d.items() if k not in ("file_path", "blob_url")}
-    out["download_url"] = _abs(f"/api/download/{d['id']}")
     return _camelize(out) if camel else out
 
 
@@ -104,100 +89,11 @@ def _record_out(r: dict, camel: bool = True) -> dict:
     return _camelize(out) if camel else out
 
 
-def _safe_name(name: str | None, default: str = "document") -> str:
-    return re.sub(r"[^a-zA-Z0-9._-]", "_", name or default)
-
-
-def _sanitize(s: str, max_len: int = 80) -> str:
-    s = re.sub(r"[^a-zA-Z0-9._-]+", "_", s)
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s[:max_len] or "document"
-
-
-def _ext(name: str | None) -> str:
-    m = re.search(r"\.[a-zA-Z0-9]{1,8}$", name or "")
-    return m.group(0).lower() if m else ""
-
-
 def _int(v, default=None):
     try:
         return int(v)
     except (TypeError, ValueError):
         return default
-
-
-def _cron_or_user() -> bool:
-    """Cron bearer token (when CRON_SECRET is set) or a signed-in user."""
-    secret = C.CRON_SECRET
-    if secret and request.headers.get("Authorization") == f"Bearer {secret}":
-        return True
-    return auth.current_user() is not None
-
-
-# ── documents ────────────────────────────────────────────────────────────────
-@bp.get("/api/download/<doc_id>")
-def download_document(doc_id: str):
-    doc = queries.get_document(doc_id)
-    if not doc:
-        return _err("Document not found", 404)
-    key = doc["file_path"]
-    if not key:
-        return _err(storage.NOT_IN_REPOSITORY, 404)
-    try:
-        if not storage.exists(key):
-            return _err("Failed to fetch file", 502)
-    except Exception:  # noqa: BLE001
-        log.exception("storage check failed")
-        return _err("Download failed", 500)
-    name = _safe_name(doc.get("file_name"))
-    ctype = _DOC_MIME.get(_ext(name)) or mimetypes.guess_type(name)[0] or "application/octet-stream"
-    headers = {"Content-Type": ctype, "Content-Disposition": f'attachment; filename="{name}"',
-               "Cache-Control": "public, max-age=300"}
-    if doc.get("file_size"):
-        headers["Content-Length"] = str(doc["file_size"])
-    return Response(stream_with_context(storage.stream(key)), headers=headers)
-
-
-@bp.get("/api/download/country/<iso3>")
-def download_country(iso3: str):
-    iso3 = iso3.upper()
-    lang = (request.args.get("lang") or "all").upper()
-    lang = lang if lang in ("ENG", "ORI") else "all"
-    docs = queries.get_country_docs_for_download(iso3, lang)
-    if not docs:
-        return _err("No documents found for this selection.", 404)
-    if sum(d.get("file_size") or 0 for d in docs) > MAX_ZIP_BYTES:
-        return _err("This selection is too large to bundle. Please download documents individually.", 413)
-    buf = io.BytesIO()
-    used: set[str] = set()
-    total = 0
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:     # PDFs / DOCX are already compressed
-        for d in docs:
-            if not d["file_path"]:                                  # not transferred to the repository yet
-                continue
-            try:
-                data = storage.read(d["file_path"])
-            except Exception:  # noqa: BLE001 - a failed file drops that one document, not the archive
-                log.warning("zip: could not read %s", d.get("file_path"))
-                continue
-            total += len(data)
-            if total > MAX_ZIP_BYTES:
-                break
-            base = _sanitize(d["record_name"])
-            tag = "EN" if d["lang_type"] == "ENG" else (_sanitize(d["lang_label"], 24) if d.get("lang_label") else "orig")
-            ext = _ext(d.get("file_name"))
-            name, n = f"{base}__{tag}{ext}", 2
-            while name.lower() in used:
-                name, n = f"{base}__{tag}_{n}{ext}", n + 1
-            used.add(name.lower())
-            zf.writestr(name, data)
-    if not used:
-        return _err("Could not retrieve any of the documents. Please try again.", 502)
-    slug = {"ENG": "english", "ORI": "original-language"}.get(lang, "all")
-    out = buf.getvalue()
-    return Response(out, headers={"Content-Type": "application/zip", "Content-Length": str(len(out)),
-                                  "Content-Disposition": f'attachment; filename="{_sanitize(iso3)}_{slug}_policies.zip"',
-                                  "Cache-Control": "public, max-age=300"})
 
 
 # ── lookups / records (read-only) ────────────────────────────────────────────
@@ -305,21 +201,6 @@ def export_documents():
     payload = {"count": len(data), "exportedAt": datetime.utcnow().isoformat() + "Z", "lang": lang or "ALL",
                "records": [_record_out(r) for r in data]}
     return _json(payload, headers={"Cache-Control": "public, max-age=300", **_cors()})
-
-
-# ── search-index maintenance ────────────────────────────────────────────────
-@bp.route("/api/rag-sync/reconcile", methods=["GET", "POST"])
-def rag_reconcile():
-    if request.method == "GET" and C.CRON_SECRET:
-        if request.headers.get("Authorization") != f"Bearer {C.CRON_SECRET}":
-            return _err("Unauthorized", 401)
-    elif not _cron_or_user():
-        return _err("Unauthorized", 401)
-    try:
-        return _json(indexer.reconcile(12))
-    except Exception:  # noqa: BLE001
-        log.exception("reconcile failed")
-        return _err("Reconcile failed", 500)
 
 
 # ── policy changes ──────────────────────────────────────────────────────────
@@ -534,8 +415,7 @@ def v1_record(_partner, record_id: str):
     data = {k: rec.get(k) for k in ("id", "country", "name_eng", "name_orig", "year", "year_revised", "source",
                                     "overview", "policy_guidance_tier", "strategy_tier", "link", "pages", "updated_at")}
     data["documents"] = [{"id": d["id"], "lang_type": d["lang_type"], "lang_code": d["lang_code"],
-                          "lang_label": d["lang_label"], "download_url": _abs(f"/api/download/{d['id']}"),
-                          "file_name": d["file_name"], "file_size": d["file_size"]} for d in rec["documents"]]
+                          "lang_label": d["lang_label"], "file_name": d["file_name"], "file_size": d["file_size"]} for d in rec["documents"]]
     return _json({"data": data})
 
 

@@ -16,37 +16,26 @@ from utils.components import (fmt_size, machine_readable_badge, original_link_bu
                               superseded_href, superseded_link_kind, tier_badge, tier_label, title_class)
 from utils.countries_data import countries_by_iso3
 from utils.icons import icon
-from utils.routes import api_url, href
-from utils.ui import button, button_class, cn, link
-from utils.widgets import translate_button, translate_dialog
+from utils.routes import href
+from utils.ui import button_class, cn, link
 
 
 def level_meta(level: str) -> dict:
     return LEVEL_META.get(level, LEVEL_META["national"])
 
 
-def _bulk_button(iso3: str, lang: str, count: int, label: str, icon_name: str, variant: str = "outline"):
-    if count == 0:
-        return button(icon(icon_name, "h-3.5 w-3.5"), f"{label} (0)", size="sm", variant="outline", disabled=True,
-                      cls="gap-1.5 opacity-60")
-    return html.A([icon(icon_name, "h-3.5 w-3.5"), f"{label} ({count})"],
-                  href=f"{api_url(f'/api/download/country/{iso3}')}?lang={lang}", download="",
-                  className=button_class(variant, "sm", "gap-1.5"))
-
-
-def _doc_link(doc: dict, label: str):
+def _doc_tag(doc: dict, label: str):
+    """The document's name / size tag (files are not downloadable – they only live in the UC volume)."""
     src = doc.get("translation_source")
     from utils.components import translation_source_label  # noqa: PLC0415
 
-    return html.A([
+    return html.Span([
         icon("file-text", "h-3.5 w-3.5 text-blue-600"),
         html.Span(label, className="max-w-[10rem] truncate"),
         html.Span(translation_source_label(src), className=cn("rounded border px-1 text-[9px] font-medium",
                                                               C.TRANSLATION_SOURCE_BADGE.get(src, ""))) if src else None,
         html.Span(f"· {fmt_size(doc['file_size'])}", className="text-muted-foreground") if doc.get("file_size") else None,
-        icon("download", "h-3 w-3 shrink-0"),
-    ], href=api_url(f"/api/download/{doc['id']}"), download="", title=doc.get("file_name") or None,
-        className=button_class("ghost", "sm", "h-7 gap-1.5 px-2 text-xs"))
+    ], title=doc.get("file_name") or None, className=button_class("ghost", "sm", "h-7 gap-1.5 px-2 text-xs"))
 
 
 def _policy_row(p: dict, docs: list[dict]):
@@ -81,9 +70,8 @@ def _policy_row(p: dict, docs: list[dict]):
 
     right = [
         original_link_button(p.get("link"), p.get("link_ok"), p.get("link_last_ok_at") is not None),
-        _doc_link(eng, "English") if eng else None,
-        _doc_link(ori, ori.get("lang_label") or "Original language") if ori else None,
-        translate_button(p["id"]) if (not eng and ori and ori.get("lang_code") and ori["lang_code"] != "en") else None,
+        _doc_tag(eng, "English") if eng else None,
+        _doc_tag(ori, ori.get("lang_label") or "Original language") if ori else None,
         html.Span("No files", className="text-xs text-muted-foreground sm:pt-1") if (not eng and not ori and not p.get("link")) else None,
     ]
     return html.Div([
@@ -202,17 +190,5 @@ def layout(params=None):
                  cls=button_class("outline", "sm", "gap-1.5")),
         ], className="flex flex-wrap items-start justify-between gap-3"),
         ori_summary,
-        html.Div([
-            html.Div([
-                html.Span([icon("file-down", "h-4 w-4 text-blue-600"), "Download all"],
-                          className="mr-1 inline-flex items-center gap-1.5 text-sm font-medium"),
-                _bulk_button(iso3, "ENG", eng_count, "English translations", "download"),
-                _bulk_button(iso3, "ORI", ori_count, "Original-language", "languages"),
-                _bulk_button(iso3, "all", total_docs, "Everything", "download", "default") if total_docs > 0 else None,
-            ], className="flex flex-wrap items-center gap-2.5"),
-            html.P(["Each option downloads a single ", html.Code(".zip"), " archive of the matching documents."],
-                   className="mt-2 text-xs text-muted-foreground"),
-        ], className="rounded-lg border bg-muted/30 p-4"),
         *body,
-        translate_dialog(),
     ], className="space-y-6")
