@@ -26,7 +26,7 @@ def ext_of(file_name: str | None) -> str:
 
 
 def load_pages(data: bytes, file_name: str | None) -> list[tuple[int | None, str]]:
-    """Return [(page_number_or_None, text)] – one entry per PDF page, one for DOCX/TXT."""
+    """Return [(page_number_or_None, text)] – one entry per PDF page, one for DOCX / TXT / XLSX."""
     ext = ext_of(file_name)
     if ext == "pdf" or data[:5] == b"%PDF-":
         from pypdf import PdfReader
@@ -44,6 +44,8 @@ def load_pages(data: bytes, file_name: str | None) -> list[tuple[int | None, str
         return [(None, clean(_docx_text(data)))]
     if ext == "txt":
         return [(None, clean(data.decode("utf-8", errors="replace")))]
+    if ext in ("xlsx", "xlsm"):
+        return [(None, clean(_xlsx_text(data)))]
     raise ValueError(f"Unsupported file type: .{ext or '?'}")
 
 
@@ -58,6 +60,32 @@ def _docx_text(data: bytes) -> str:
             if cells:
                 parts.append(" | ".join(cells))
     return "\n".join(parts)
+
+
+def _xlsx_text(data: bytes, max_cells: int = 200_000) -> str:
+    """Workbook → text: one "Sheet: <name>" block per sheet, one line per non-empty row ("a | b | c").
+    Cached values are used for formulas; very large workbooks are cut at `max_cells` cells."""
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    parts, seen = [], 0
+    try:
+        for ws in wb.worksheets:
+            rows = []
+            for row in ws.iter_rows(values_only=True):
+                seen += len(row)
+                cells = [str(v).strip() for v in row if v is not None and str(v).strip()]
+                if cells:
+                    rows.append(" | ".join(cells))
+                if seen >= max_cells:
+                    break
+            if rows:
+                parts.append(f"Sheet: {ws.title}\n" + "\n".join(rows))
+            if seen >= max_cells:
+                break
+    finally:
+        wb.close()
+    return "\n\n".join(parts)
 
 
 def extract_text(data: bytes, file_name: str | None, max_bytes: int = 20 * 1024 * 1024) -> str:

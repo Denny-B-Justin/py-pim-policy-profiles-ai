@@ -6,7 +6,7 @@ Production : a folder in a Unity Catalog **Volume** (constants.FILES_ROOT), acce
 Local demo : a plain folder (PIM_DB_BACKEND=sqlite → PIM_LOCAL_STORAGE).
 
 Two areas below the root:
-    documents/pim-repositary/   the policy documents, filed by country / jurisdiction / year / tier / language
+    documents/country-files/    the policy documents, filed by country / jurisdiction / year / tier / language
                                 (`repository_key`).  The documents table has no path column: a document's file is
                                 found through `document_path(doc)` – the row's `blob_url` when it holds a path in
                                 this area (uploads made by the app), else the repository manifest (_manifest.json,

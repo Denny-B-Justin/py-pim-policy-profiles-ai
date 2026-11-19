@@ -18,22 +18,22 @@
       "checksum": "4004e5ca9045db4c41ad6b5e5d6714ce"
     },
     ".env.sample": {
-      "checksum": "bf8b6d74170e9d82c8e632bc58d3930b"
+      "checksum": "ff7d608c16a399c09071f5aee061c91f"
     },
     ".gitignore": {
       "checksum": "24634f39c3c6f46e5996066edb3d7039"
     },
     "ARCHITECTURE.md": {
-      "checksum": "6b3fb1dc5ba39c57798b2b4d9ff8446f"
+      "checksum": "c9272115a90fdbfcf8bd18408d6e9f9c"
     },
     "README.md": {
-      "checksum": "d7af945730d405dec95bd3c028ce3113"
+      "checksum": "6d2ddd48af4bf3a26c38c657b6f67798"
     },
     "app.py": {
       "checksum": "d84b2a0f8dcd941581db03afe5cbaa01"
     },
     "constants.py": {
-      "checksum": "8bbf216b1c65568a25841642ff8ed367"
+      "checksum": "1bd038cdc732fe17bdd6a0e5b564a0aa"
     },
     "assets/app.js": {
       "checksum": "fe4aed67182f864dc15ace226e6045f6"
@@ -219,16 +219,16 @@
       "checksum": "9cd29e680bb53e58666b30e432dbf312"
     },
     "scripts/reindex.py": {
-      "checksum": "3d28105c3da88d8e904f80b0bf139e73"
+      "checksum": "b2a07112f998e725b0456e7128c06ca5"
     },
     "scripts/seed_countries.py": {
       "checksum": "1d9aefa71018a692aff3bc0ba401ac22"
     },
     "scripts/seed_demo.py": {
-      "checksum": "428ab00a61f3998b11ed6d9ce7f0cd56"
+      "checksum": "2e437e37f37ffc65029b99ec29e0eda0"
     },
     "sql/uc_tables.sql": {
-      "checksum": "a3390892c644b649aa9800a08f27ff29"
+      "checksum": "b05274545f9753b22229c447bdfdf27a"
     },
     "utils/api_keys.py": {
       "checksum": "74e59e3ac730c3c6d0c9598b741ca421"
@@ -264,7 +264,7 @@
       "checksum": "221fb42f14c147cda4a50a9ddd354a14"
     },
     "utils/chunking.py": {
-      "checksum": "019723386f38bb69e2685432a87348c2"
+      "checksum": "b0ca1fb79f4595aa64e63dab486a7fbe"
     },
     "utils/components.py": {
       "checksum": "598df08bc094fcc31d0114900fb8ab15"
@@ -282,7 +282,7 @@
       "checksum": "199adc59966526244dee83e23c689106"
     },
     "utils/extract.py": {
-      "checksum": "af1be6e60a8d7b57c4fe6bd2835956e3"
+      "checksum": "fb19170f5901363b9dcf84b85a512c23"
     },
     "utils/icons.py": {
       "checksum": "6074628eb9948acfd186e08f91472aaf"
@@ -291,7 +291,7 @@
       "checksum": "9d76e965ba0f528f4a54fd9aa37512dd"
     },
     "utils/indexer.py": {
-      "checksum": "a15d704aa61edca63fb5e99a828f6ac2"
+      "checksum": "76d73842fd57a613fe803e70f032874a"
     },
     "utils/jobs.py": {
       "checksum": "2dbdc7e13ce585fea25a3c39591c8a7e"
@@ -309,7 +309,7 @@
       "checksum": "d1b607ae7586ca0502335dcb5fb533ed"
     },
     "utils/rag.py": {
-      "checksum": "63bc99d7094628d2837c7f638e47e2af"
+      "checksum": "dd9352a8c91ee2986967627764c370cb"
     },
     "utils/ratelimit.py": {
       "checksum": "4f88c7ddb6841153944950fc176cfd65"
@@ -324,10 +324,10 @@
       "checksum": "ee921b88d251367509f077ec30fe8ca7"
     },
     "utils/schema.py": {
-      "checksum": "c91935a0c2378f8863fb258a45a75412"
+      "checksum": "a31acab60ed9969e6955f030b3b07ba8"
     },
     "utils/storage.py": {
-      "checksum": "4693da9a03081a9310961ceeb4f80dd9"
+      "checksum": "af3c955b0ec7609696bcd572cf292bae"
     },
     "utils/toast.py": {
       "checksum": "2d21f882d887d56499ec2f2540be423e"
@@ -343,6 +343,9 @@
     },
     "utils/xlsx_exports.py": {
       "checksum": "f20381d4e3d72e1ceae946f4df446dbc"
+    },
+    "utils/ai_search.py": {
+      "checksum": "1e8caebf65acc057a12f703a087a7a68"
     }
   }
 }

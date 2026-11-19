@@ -104,23 +104,24 @@ TABLES: dict[str, str] = {
     "batch_import_rows": f"{TABLE_PREFIX}batch_import_rows",        # was  batch_import_rows (jsonb -> STRING)
     "briefings_cache": f"{TABLE_PREFIX}briefings_cache",            # was  briefings_cache
     "imf_pima_assessments": f"{TABLE_PREFIX}imf_pima_assessments",  # was  imf_pima_assessments
+    # Search index (replaces langchain_pg_embedding / chunk_parents and the old JSON chunk files):
+    "document_chunks": f"{TABLE_PREFIX}document_chunks",            # one row per chunk – source of the AI Search index
+    "document_ingest_log": f"{TABLE_PREFIX}document_ingest_log",    # one row per document – last chunking outcome
 }
-# The search index (chunks) is not a table: it is stored as files in the volume (CHUNKS_DIR).
 
 # Partner API (/api/v1/*) needs the partner_api_keys table, which does not exist yet → off by default.
 PARTNER_API_ENABLED = _env("PIM_PARTNER_API", "0") in ("1", "true", "True")
 
 # Unity Catalog Volume + folder holding the app's files (replaces Vercel Blob):
-#   <FILES_ROOT>/documents/pim-repositary/        the policy document repository (PDF / DOCX / TXT):
+#   <FILES_ROOT>/documents/country-files/         the policy document repository (PDF / DOCX / XLSX / TXT) + _manifest.json:
 #       <ISO3>_<Country>/<National|Subnational_<entity>|Supranational>/<Year>/<Tier>/<ENG|ORI_<language>>/
 #       <id8>_<file name>   +  _manifest.json  (document id → path; written by scripts/copy_documents_to_volume.py)
-#   <FILES_ROOT>/chunks/<record-id>__<ENG|ORI>__<document-id>.json  search-index chunks, one file per document
 UC_VOLUME = _env("DATABRICKS_VOLUME", "vgpbpi163")
 UC_VOLUME_ROOT = f"/Volumes/{DATABRICKS_CATALOG}/{DATABRICKS_SCHEMA}/{UC_VOLUME}"
 FILES_FOLDER = _env("PIM_FILES_FOLDER", "PIMPAM-AI/policy-profiles/upload-files").strip("/")
 FILES_ROOT = f"{UC_VOLUME_ROOT}/{FILES_FOLDER}"
-DOCUMENTS_DIR = _env("PIM_DOCUMENTS_FOLDER", "documents/pim-repositary").strip("/")
-CHUNKS_DIR = "chunks"
+DOCUMENTS_DIR = _env("PIM_DOCUMENTS_FOLDER", "documents/country-files").strip("/")
+CHUNKS_DIR = "chunks"                         # legacy JSON chunk files (v1) – no longer read or written
 # Index of the repository: {document id: path relative to DOCUMENTS_DIR}.  Documents uploaded through the app
 # instead record their full path in the documents row (`blob_url`).
 DOCUMENT_MANIFEST = "_manifest.json"
@@ -403,9 +404,28 @@ EXTRACT_MIN_CHARS_PER_PAGE = 40
 EXTRACT_MAX_DETECT_BYTES = 40 * 1024 * 1024
 
 # Search index + retrieval
+# Chunk sizes live in utils/chunking.py (shared verbatim with the Databricks backfill notebook); these two are
+# informational copies for the statistics pages.
 CHUNK_SIZE = 1000
 CHUNK_PARENT_CHARS = max(CHUNK_SIZE * 2, 1800)   # 2000
-INDEX_LOAD_WORKERS = 16                       # parallel downloads of chunk files when the search index loads
+
+# Retrieval backend:
+#   "ai_search"  Databricks AI Search (formerly Vector Search) Delta Sync index over policy_repo_document_chunks –
+#                hybrid (vector + keyword) search, embeddings computed by Databricks.  Production default.
+#   "bm25"       in-process BM25 (SQLite FTS5) over the same chunks table – no index needed.  Used for the local
+#                SQLite demo, before the index exists, and as the automatic fallback when AI Search fails.
+SEARCH_BACKEND = _env("PIM_SEARCH_BACKEND", "bm25" if DB_BACKEND == "sqlite" else "ai_search").lower()
+AI_SEARCH_ENDPOINT = _env("PIM_AI_SEARCH_ENDPOINT", "pim_policy_profiles_ai_search")
+AI_SEARCH_INDEX = _env("PIM_AI_SEARCH_INDEX",
+                       f"{DATABRICKS_CATALOG}.{DATABRICKS_SCHEMA}.{TABLES['document_chunks']}_index")
+AI_SEARCH_EMBEDDING_MODEL = _env("PIM_AI_SEARCH_EMBEDDING_MODEL", "databricks-qwen3-embedding-0-6b")  # informational
+AI_SEARCH_QUERY_TYPE = _env("PIM_AI_SEARCH_QUERY_TYPE", "HYBRID").upper()       # HYBRID | ANN
+AI_SEARCH_RERANK = _env("PIM_AI_SEARCH_RERANK", "0") in ("1", "true", "True")   # Databricks reranker (extra latency)
+AI_SEARCH_FALLBACK_BM25 = _env("PIM_AI_SEARCH_FALLBACK", "1") in ("1", "true", "True")
+AI_SEARCH_SYNC_ON_WRITE = _env("PIM_AI_SEARCH_SYNC", "1") in ("1", "true", "True")  # trigger a sync after uploads
+AI_SEARCH_SYNC_DEBOUNCE_SECONDS = _env_int("PIM_AI_SEARCH_SYNC_DEBOUNCE", 20)
+AI_SEARCH_TIMEOUT_SECONDS = _env_int("PIM_AI_SEARCH_TIMEOUT", 30)
+CHUNK_WRITE_BATCH = 100                       # chunk rows per MERGE statement (one JSON parameter per batch)
 RETRIEVER_K = 6
 BRIEFING_RETRIEVER_K = 20
 MAX_CONTEXT_TOKENS = 6000

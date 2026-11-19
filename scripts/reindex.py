@@ -1,12 +1,13 @@
 """
-Rebuild the search index (the chunk files in <FILES_ROOT>/chunks/) from the stored documents.
+Re-chunk the stored documents into policy_repo_document_chunks (the source of the AI Search index) and ask the
+index to sync.  Documents are rewritten in place – the index keeps answering, unchanged passages are not re-embedded.
 
-    python scripts/reindex.py                 # English documents (clears the index first) – what the app's RAG admin page does
+    python scripts/reindex.py                 # English documents (+ drops chunks of deleted ENG documents)
     python scripts/reindex.py --lang all      # English + original-language documents
-    python scripts/reindex.py --lang ori      # append original-language documents (does not clear)
+    python scripts/reindex.py --lang ori      # original-language documents only
 
-Run it once after copying the documents into the volume (scripts/copy_documents_to_volume.py): the pgvector index
-of the old app is not copied (see docs/DATABRICKS_MIGRATION.md).
+For the first, bulk load of the documents already in the volume use the Databricks notebook
+notebooks/01_backfill_document_chunks.py instead (parallel, incremental, same chunker) – see docs/AI_SEARCH.md.
 """
 from __future__ import annotations
 

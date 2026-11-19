@@ -195,9 +195,70 @@ SCHEMA: dict[str, dict] = {
         "pk": ["id"],
         "fks": [("iso3", "countries", "iso3")],
     },
+    # ── search index ────────────────────────────────────────────────────────
+    # Source table of the Databricks AI Search Delta Sync index.  Written by utils/indexer.py (uploads, re-index,
+    # reconcile) and by the one-time backfill notebook (notebooks/01_backfill_document_chunks.py) with the SAME
+    # chunker (utils/chunking.py).  Column types are those AI Search can sync and filter on (INT, not SMALLINT).
+    # Change Data Feed must stay on: the index syncs from it.
+    "document_chunks": {
+        "comment": "Search-index chunks of the policy documents (one row per chunk). Source of the AI Search index "
+                   "<table>_index; record fields are copied in so the index can filter on them.",
+        "cols": [
+            ("chunk_id", "STRING NOT NULL"),             # <document_id>:<chunk_index>  (index primary key)
+            ("document_id", "STRING NOT NULL"),
+            ("record_id", "STRING NOT NULL"),
+            ("lang_type", "STRING NOT NULL"),            # ENG | ORI
+            ("lang_code", "STRING"),
+            ("chunk_index", "INT NOT NULL"),
+            ("page", "INT"),                             # first page of the chunk (PDF); NULL for DOCX / TXT
+            ("page_end", "INT"),
+            ("section_heading", "STRING"),
+            ("content", "STRING NOT NULL"),              # passage shown to the LLM / in citations
+            ("embedding_text", "STRING NOT NULL"),       # context header + content – the column AI Search embeds
+            ("char_count", "INT"),
+            ("country", "STRING"),
+            ("country_name", "STRING"),
+            ("name_eng", "STRING"),
+            ("name_orig", "STRING"),
+            ("year", "INT"),
+            ("source", "STRING"),
+            ("policy_guidance_tier", "INT"),
+            ("strategy_tier", "INT"),
+            ("jurisdiction_level", "STRING"),
+            ("jurisdiction_name", "STRING"),
+            ("record_status", "STRING NOT NULL"),        # latest | archived  (archived is filtered out by default)
+            ("file_name", "STRING"),
+            ("file_path", "STRING"),                     # path relative to the document repository
+            ("chunker_version", "STRING NOT NULL"),
+            ("row_hash", "STRING NOT NULL"),             # MERGE rewrites a row (→ re-embedding) only when it changes
+            ("created_at", "TIMESTAMP NOT NULL"),
+            ("updated_at", "TIMESTAMP NOT NULL"),
+        ],
+        "pk": ["chunk_id"],
+        "tblproperties": {"delta.enableChangeDataFeed": "true"},
+    },
+    "document_ingest_log": {
+        "comment": "Last chunking outcome per document (indexed / no_text_layer / empty / missing_file / unsupported / "
+                   "failed) – written by the app and the backfill notebook.",
+        "cols": [
+            ("document_id", "STRING NOT NULL"),
+            ("record_id", "STRING"),
+            ("lang_type", "STRING"),
+            ("file_path", "STRING"),
+            ("file_size", "BIGINT"),
+            ("status", "STRING NOT NULL"),
+            ("detail", "STRING"),
+            ("chunk_count", "INT"),
+            ("chunker_version", "STRING"),
+            ("source", "STRING"),                        # notebook_backfill | app_upload | app_reindex | app_reconcile
+            ("processed_at", "TIMESTAMP NOT NULL"),
+        ],
+        "pk": ["document_id"],
+    },
 }
 
-_SQLITE_TYPES = {"STRING": "TEXT", "DECIMAL(12,3)": "NUMERIC", "DECIMAL(6,4)": "NUMERIC", "TIMESTAMP": "TEXT", "DATE": "TEXT"}
+_SQLITE_TYPES = {"STRING": "TEXT", "DECIMAL(12,3)": "NUMERIC", "DECIMAL(6,4)": "NUMERIC", "TIMESTAMP": "TEXT", "DATE": "TEXT",
+                 "BIGINT": "INTEGER"}
 
 
 def _qualified(logical: str, dialect: str) -> str:
@@ -227,15 +288,18 @@ def ddl(logical: str, dialect: str = "databricks") -> str:
     if dialect == "sqlite":
         return f"CREATE TABLE IF NOT EXISTS {_qualified(logical, dialect)} (\n{body}\n)"
     comment = spec["comment"].replace("'", "''")
+    props = spec.get("tblproperties")
+    tblprops = ("\nTBLPROPERTIES (" + ", ".join(f"'{k}' = '{v}'" for k, v in props.items()) + ")") if props else ""
     return (
         f"CREATE TABLE IF NOT EXISTS {_qualified(logical, dialect)} (\n{body}\n)\n"
-        f"USING DELTA\nCOMMENT '{comment}'"
+        f"USING DELTA\nCOMMENT '{comment}'{tblprops}"
     )
 
 
 CREATE_ORDER = [
     "countries", "policy_records", "documents", "users", "audit_logs", "partner_api_keys",
     "batch_imports", "batch_import_rows", "briefings_cache", "imf_pima_assessments",
+    "document_chunks", "document_ingest_log",
 ]
 
 
