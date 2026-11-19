@@ -1,6 +1,7 @@
 """
 Flask routes living next to the Dash app (they share the same server / session) – ports of `web/app/api/**`.
 
+    POST /auth/signout                               end the local session, back to the home page
     GET  /api/countries[?withRecords=1]              lookup list
     GET  /api/records[?search=&country=&…]           list, GET /api/records/<id>, GET /api/records/language-breakdown
     GET  /api/jurisdictions                          sub-national entities with current records
@@ -24,7 +25,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from functools import wraps
 
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, redirect, request
 
 import constants as C
 from utils import api_keys, auth, briefings, chat, mai_client, queries
@@ -94,6 +95,15 @@ def _int(v, default=None):
         return int(v)
     except (TypeError, ValueError):
         return default
+
+
+# ── sign-out (POST only: with SameSite=Lax cookies another site cannot sign a user out) ─────
+@bp.post("/auth/signout")
+def signout():
+    if not C.AUTH_ENABLED:
+        return _err("Not found", 404)
+    auth.sign_out()
+    return redirect(api_url("/") + "?page=home", code=303)
 
 
 # ── lookups / records (read-only) ────────────────────────────────────────────

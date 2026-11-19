@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import importlib
 
+import constants as C
+
 ROUTES: dict[str, str] = {
     "home": "home",
     "countries": "countries",
@@ -35,11 +37,12 @@ ROUTES: dict[str, str] = {
     "signin": "signin",
     "register": "register",
 }
+AUTH_PAGES = {"signin", "register"}           # 404 while local sign-in is off (AUTH_ENABLED=false)
 
 
 def load(name: str):
     mod = ROUTES.get(name)
-    if not mod:
+    if not mod or (name in AUTH_PAGES and not C.AUTH_ENABLED):
         return None
     return importlib.import_module(f"pages.{mod}")
 

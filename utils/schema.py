@@ -85,7 +85,6 @@ SCHEMA: dict[str, dict] = {
             ("email_verified", "TIMESTAMP"),
             ("image", "STRING"),
             ("password_hash", "STRING"),
-            ("created_at", "TIMESTAMP"),
         ],
         "pk": ["id"],
     },

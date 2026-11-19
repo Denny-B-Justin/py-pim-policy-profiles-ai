@@ -7,8 +7,9 @@ from __future__ import annotations
 from dash import dcc, html
 
 import constants as C
+from utils import auth
 from utils.icons import icon
-from utils.routes import asset, href
+from utils.routes import api_url, asset, href
 from utils.ui import link, separator
 
 # (page, label, short_label, icon) — identical order to PRIMARY_NAV / SECONDARY_NAV in layout.tsx
@@ -37,6 +38,27 @@ def _nav_item(page: str, label: str, short: str | None, ico: str):
     return link(icon(ico, "h-3.5 w-3.5"), *text, href=href(page), cls=_NAV_LINK)
 
 
+def _account():
+    """Sign in link, or who is signed in (+ Sign out for local accounts; Connect users sign out of Connect)."""
+    try:
+        user = auth.current_user()
+    except Exception:  # noqa: BLE001 - the frame must render even when the users table cannot be read
+        user = None
+    if not user or user.get("source") == "guest":
+        if not C.AUTH_ENABLED:
+            return None
+        return link(icon("log-in", "h-3.5 w-3.5"), html.Span("Sign in", className="hidden sm:inline"),
+                    href=href("signin"), title="Sign in", cls=_NAV_LINK)
+    who = html.Span([icon("user", "h-3.5 w-3.5"), html.Span(user.get("name") or user.get("email"),
+                                                            className="hidden max-w-[10rem] truncate md:inline")],
+                    title=user.get("email") or "", className="flex items-center gap-1.5 text-sm text-muted-foreground")
+    if user.get("source") != "local":
+        return who
+    return html.Form([who, html.Button([icon("log-out", "h-3.5 w-3.5"), html.Span("Sign out", className="hidden sm:inline")],
+                                       type="submit", title="Sign out", className=_NAV_LINK)],
+                     method="post", action=api_url("/auth/signout"), className="flex items-center gap-1")
+
+
 def header():
     return html.Header(
         html.Div(
@@ -58,6 +80,7 @@ def header():
                              "hover:bg-muted hover:text-foreground")
                     for page, label, _s, ico in PRIMARY_NAV
                 ], className="flex items-center gap-1 lg:hidden"),
+                _account(),
             ], className="flex h-14 items-center justify-between gap-4"),
             className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
         ),

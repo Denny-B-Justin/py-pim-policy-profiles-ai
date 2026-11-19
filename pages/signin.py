@@ -72,6 +72,8 @@ def register_callbacks(app):
         from utils.ratelimit import rate_limit  # noqa: PLC0415
 
         ok, retry = rate_limit(f"signin:{auth.client_ip()}", 10, 60)
+        if ok and email:                                 # also per account: slows guessing from many addresses
+            ok, retry = rate_limit(f"signin-account:{email.strip().lower()}", 10, 900)
         if not ok:
             return no_update, f"Too many attempts. Try again in {retry}s.", False, no_update
         user = auth.authenticate(email or "", password or "") if (email and password) else None
