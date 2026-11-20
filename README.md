@@ -69,6 +69,16 @@ Uploaded documents are only written to the UC volume (`…/upload-files/document
 at the same time the app chunks them into `policy_repo_document_chunks` and asks the AI Search index to sync. The app never reads files
 back from the volume.
 
+### Sync the search index manually
+
+```bash
+python scripts/check_ai_search.py --sync                        # check the AI Search setup, then trigger a sync
+python scripts/check_ai_search.py --sync --json report.json     # same, and write the report as JSON (to send on)
+python -c "from utils import ai_search; print(ai_search.sync_now())"   # sync only; True = sync accepted
+```
+
+A sync only picks up pending changes in `policy_repo_document_chunks`, so running it when nothing has changed is harmless.
+
 ## Deploy to Posit Connect
 
 ```bash
