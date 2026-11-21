@@ -2,7 +2,7 @@
 
 Dash port of the Next.js + FastAPI "PIM Policy Profiles AI" application, built to run on **Posit Connect** (Python 3.12.12).
 
-* Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.policy_repo_*` tables, documents in the UC Volume folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files`
+* Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.policy_repo_*` tables, documents in the UC Volume folder `/Volumes/prd_mega/sgpbpi163/pimpam_policy/PIMPAM-AI/policy-profiles/upload-files`
 * Search: **Databricks AI Search** (formerly Vector Search) index over the `policy_repo_document_chunks` table – see [docs/AI_SEARCH.md](docs/AI_SEARCH.md)
 * AI: **Posit mAI Gateway** — `MAI_BASE_URL` + one endpoint per provider (`MAI_ENDPOINT_OPENAI` / `_CLAUDE` / `_GEMINI`), no API keys
 * Pages: one site, routed by query string — `/?page=<name>` (home is `/` or `/?page=home`)
@@ -68,6 +68,16 @@ python scripts/seed_countries.py                # the 196-country reference list
 Uploaded documents are only written to the UC volume (`…/upload-files/documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/`);
 at the same time the app chunks them into `policy_repo_document_chunks` and asks the AI Search index to sync. The app never reads files
 back from the volume.
+
+### Sync the search index manually
+
+```bash
+python scripts/check_ai_search.py --sync                        # check the AI Search setup, then trigger a sync
+python scripts/check_ai_search.py --sync --json report.json     # same, and write the report as JSON (to send on)
+python -c "from utils import ai_search; print(ai_search.sync_now())"   # sync only; True = sync accepted
+```
+
+A sync only picks up pending changes in `policy_repo_document_chunks`, so running it when nothing has changed is harmless.
 
 ## Deploy to Posit Connect
 

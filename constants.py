@@ -121,7 +121,7 @@ PARTNER_API_ENABLED = _env("PIM_PARTNER_API", "0") in ("1", "true", "True")
 
 # Unity Catalog Volume folder the app uploads documents into (write-only: the app never reads files back):
 #   <FILES_ROOT>/documents/upload-documents/<ISO3>_<Country>/<National|Subnational>/<id8>_<file name>
-UC_VOLUME = _env("DATABRICKS_VOLUME", "vgpbpi163")
+UC_VOLUME = _env("DATABRICKS_VOLUME", "pimpam_policy")
 UC_VOLUME_ROOT = f"/Volumes/{DATABRICKS_CATALOG}/{DATABRICKS_SCHEMA}/{UC_VOLUME}"
 FILES_FOLDER = _env("PIM_FILES_FOLDER", "PIMPAM-AI/policy-profiles/upload-files").strip("/")
 FILES_ROOT = f"{UC_VOLUME_ROOT}/{FILES_FOLDER}"
