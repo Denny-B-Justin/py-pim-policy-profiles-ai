@@ -2,7 +2,7 @@
 
 Dash port of the Next.js + FastAPI "PIM Policy Profiles AI" application, built to run on **Posit Connect** (Python 3.12.12).
 
-* Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.policy_repo_*` tables, documents in the UC Volume folder `/Volumes/prd_mega/sgpbpi163/vgpbpi163/PIMPAM-AI/policy-profiles/upload-files`
+* Data: **Azure Databricks Unity Catalog** — `prd_mega.sgpbpi163.policy_repo_*` tables, documents in the UC Volume folder `/Volumes/prd_mega/sgpbpi163/pimpam_policy/PIMPAM-AI/policy-profiles/upload-files`
 * Search: **Databricks AI Search** (formerly Vector Search) index over the `policy_repo_document_chunks` table – see [docs/AI_SEARCH.md](docs/AI_SEARCH.md)
 * AI: **Posit mAI Gateway** — `MAI_BASE_URL` + one endpoint per provider (`MAI_ENDPOINT_OPENAI` / `_CLAUDE` / `_GEMINI`), no API keys
 * Pages: one site, routed by query string — `/?page=<name>` (home is `/` or `/?page=home`)
